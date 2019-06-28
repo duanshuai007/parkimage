@@ -1,0 +1,128 @@
+请求原型：
+	{
+		"type": "request",
+		"content": {
+			"category": "login / infos",
+			"token": "xxxxxx",
+			"infos": [{
+				"index": 1,
+				"state": 0.空闲 / 1.占用 / 2.预约
+			}, {
+				"index": 2,
+				"state": 0.空闲 / 1.占用 / 2.预约
+			}...]
+		}
+	}
+
+响应原型
+	{
+		"type": "response",
+		"content": {
+			"category": "login / infos",
+			"status": 0.失败 / 1.成功,
+			"infos": [{
+				"index": 1,
+				"state": 0.空闲 / 1.占用 / 2.预约
+			}, {
+				"index": 2,
+				"state": 0.空闲 / 1.占用 / 2.预约
+			}...],
+			"message": "xxxxxxx"
+		}
+	}
+
+失败响应
+
+	{
+		"type": "response",
+		"content": {
+			"category": "login / infos",
+			"status": 0,
+			"message": "xxxxxxx"
+		}
+	}
+
+
+1. c登录请求 - s登录响应
+
+	a. c登录请求
+
+	{
+		"type": "request",
+		"content": {
+			"category": "login",
+			"token": "xxxxxx"
+		}
+	}
+
+	b. s登录响应
+
+	{
+		"type": "response",
+		"content": {
+			"category": "login",
+			"status": 1
+		}
+	}
+
+2. c拉取数据 - s拉取响应
+
+	a. c拉取数据
+
+	{
+		"type": "request",
+		"content": {
+			"category": "infos"
+		}
+	}
+
+	b. s拉取响应
+
+	{
+		"type": "response",
+		"content": {
+			"category": "infos",
+			"status": 1,
+			"infos": [{
+				"index": 1,
+				"state": 0
+			}, {
+				"index": 2,
+				"state": 1
+			}...]
+		}
+	}
+
+3. s下发数据 - c下发响应
+
+	a. s下发数据
+
+	{
+		"type": "request",
+		"content": {
+			"category": "infos",
+			"infos": [{
+				"index": 1,
+				"state": 1
+			}, {
+				"index": 2,
+				"state": 0
+			}...]
+		}
+	}
+
+	b. c下发响应
+
+	{
+		"type": "response",
+		"content": {
+			"category": "infos",
+			"status": 1
+		}
+	}
+
+
+
+
+
+
