@@ -1,128 +1,78 @@
-请求原型：
-	{
-		"type": "request",
-		"content": {
-			"category": "login / infos",
-			"token": "xxxxxx",
-			"infos": [{
-				"index": 1,
-				"state": 0.空闲 / 1.占用 / 2.预约
-			}, {
-				"index": 2,
-				"state": 0.空闲 / 1.占用 / 2.预约
-			}...]
+1.
+a.登录请求
+{
+	"type": "request",
+	"content": {
+		"category": "login",
+		"token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ="
+	}
+}
+
+b.登录响应
+{
+	"type": "response",
+	"content": {
+		"category": "login",
+		"status": 1
+	}
+}
+
+4.从相机节点接收到数据,接收到该信息后准备接收图片，图片数据以二进制方式发送。大小为size对应数值
+
+a.图片信息请求
+{
+	"type":"recogn req",
+	"image":{
+		"city":"shenyang",
+		"park":"wanda",
+		"server":0,
+		"camerano":3,
+		"time":"2019-06-28 09:24:33",
+		"random":9329832,
+		"md5":"xxxxxxxxxx", 
+		"content":"图片的数据"
+	}
+}
+
+websocket 发送给图片识别线程的信息是图片的名称，根据图片名能够找到图片对应的文件夹位置。
+
+b.发送识别信息给相机节点
+{
+	"type":"recogn resp",
+	"image":{
+		"city":"shenayng",
+		"park":"wanda",
+		"server":0,
+		"carmerno":3,
+		"time":"2019-06-28 09:24:33"
+		"random":323232,
+		"result":{
+			"status":"success",
+			"color":"xxx",
+			"plate":"xxxx"
 		}
 	}
+}
 
-响应原型
+
+ImageHandler 和 ParkHandler之间的通信格式
+
+
+ParkHandler -> ImageHandler :
+	直接发送图片名称:
+	city_park_camerano_time.jpg
+
+ImageHandler -> ParkHandler:
 	{
-		"type": "response",
-		"content": {
-			"category": "login / infos",
-			"status": 0.失败 / 1.成功,
-			"infos": [{
-				"index": 1,
-				"state": 0.空闲 / 1.占用 / 2.预约
-			}, {
-				"index": 2,
-				"state": 0.空闲 / 1.占用 / 2.预约
-			}...],
-			"message": "xxxxxxx"
-		}
-	}
-
-失败响应
-
-	{
-		"type": "response",
-		"content": {
-			"category": "login / infos",
-			"status": 0,
-			"message": "xxxxxxx"
-		}
-	}
-
-
-1. c登录请求 - s登录响应
-
-	a. c登录请求
-
-	{
-		"type": "request",
-		"content": {
-			"category": "login",
-			"token": "xxxxxx"
-		}
-	}
-
-	b. s登录响应
-
-	{
-		"type": "response",
-		"content": {
-			"category": "login",
-			"status": 1
-		}
-	}
-
-2. c拉取数据 - s拉取响应
-
-	a. c拉取数据
-
-	{
-		"type": "request",
-		"content": {
-			"category": "infos"
-		}
-	}
-
-	b. s拉取响应
-
-	{
-		"type": "response",
-		"content": {
-			"category": "infos",
-			"status": 1,
-			"infos": [{
-				"index": 1,
-				"state": 0
-			}, {
-				"index": 2,
-				"state": 1
-			}...]
-		}
-	}
-
-3. s下发数据 - c下发响应
-
-	a. s下发数据
-
-	{
-		"type": "request",
-		"content": {
-			"category": "infos",
-			"infos": [{
-				"index": 1,
-				"state": 1
-			}, {
-				"index": 2,
-				"state": 0
-			}...]
-		}
-	}
-
-	b. c下发响应
-
-	{
-		"type": "response",
-		"content": {
-			"category": "infos",
-			"status": 1
+		"name":"",
+		"recogn":{
+			"status":"",
+			"color":"",
+			"plate":""
 		}
 	}
 
 
-
-
-
+dir:	/Picture/city/park/server/carmerno/
+filename: city-park-server-carmerno-time-random.jpeg
 

@@ -7,14 +7,23 @@ from os import PathLike
 from PIL import Image
 import hashlib
 
+PATH="Picture/"
+
 class CtrlImage:
     #构造函数
     def __init__(self):
         pass
     #保存功能
     def save(self, name, data):
-#logging.info("save")
-        dstfile = open(name, 'wb')
+        dirlist = name.split('-')
+        path = "%s/%s/%s/%s" % (dirlist[0], dirlist[1], dirlist[2], dirlist[3])
+        logging.info("save:%s" % name)
+        if not os.path.exists(PATH+path):
+            os.makedirs(PATH+path)
+        if os.path.isfile(PATH+path+'/'+name):
+            #name = name + "_1"
+            os.remove(PATH+path+'/'+name)
+        dstfile = open(PATH+path+'/'+name, 'wb')
         dstfile.write(data)
         dstfile.close()
         pass
@@ -37,11 +46,10 @@ class CtrlImage:
         md5 = hashlib.md5()
         md5.update(data)
         md5hex = md5.hexdigest()
+        logging.info("the image md5: %s" % md5hex)
         if md5str == md5hex:
-#           logging.info("right")
             return True
         else:
-#           logging.info("error")
             return False
 
 if __name__ == '__main__':

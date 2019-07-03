@@ -29,6 +29,7 @@ from HandleDB import HandleLoginDB
 from HandleDB import ParkDB
 import ImageHandler
 import TheQueue 
+#import TheUniqueID
 
 class MyTest(tornado.websocket.WebSocketHandler):
 
@@ -65,6 +66,7 @@ class SerApplication(tornado.web.Application):
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',datefmt='%Y-%m-%d')
     tornado.options.parse_command_line()
     app = SerApplication()
     app.listen(Constant.options.port)
@@ -79,8 +81,11 @@ def main():
     #                    os.path.join("./", "privateKey.key"))
     # httpServer = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
     # httpServer.listen(Constant.options.port, Constant.options.host)
-    TheQueue.initQueue()
-    dicts = TheQueue.getQueue()
+
+#TheUniqueID.init()
+
+    TheQueue.init()
+    dicts = TheQueue.get()
     ihand = ImageHandler.ImageHandler(dicts)
     ihand.run()
 

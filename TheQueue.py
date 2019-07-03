@@ -9,10 +9,10 @@ import logging
 该函数只允许被调用一次，多次调用会使消息队列
 产生错误
 '''
-def initQueue():
+def init():
     global _global_dict
-    _global_dict = {"send":queue.Queue(32), "recv":queue.Queue(128)}
+    _global_dict = {"recv":queue.Queue(32),}
     logging.info("queue init")
 
-def getQueue():
+def get():
     return _global_dict 
