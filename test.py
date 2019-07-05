@@ -90,18 +90,42 @@ class Client:
             return True
 
     def run(self):
-        t = threading.Thread(target = self.clientloop, args = [])
-        t.setDaemon(False)
-        t.start()
+        sthread = threading.Thread(target = self.sendImagePthread, args = [])
+        sthread.setDaemon(False)
+        sthread.start()
+        
+        rthread = threading.Thread(target = self.recvRecognThread, args = [])
+        rthread.setDaemon(False)
+        rthread.start()
 
-    def clientloop(self):
-        file_list = os.listdir(self.path)
+    def recvRecognThread(self):
         while True:
-            for file in file_list:
-                print("file:%s" % file) 
+            recv = self.ws.recv()
+            info = json.loads(recv)
+            logging.info(info)
+            logging.info("------------")
+#logging.info(info)
+            if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "success":
+                print("wait for result") 
+                recv = self.ws.recv()
+                data = json.loads(recv)
+                logging.info(data)
+            elif info["type"] == "recogn resp" and info["image"]["result"]["status"] == "ready":
+                logging.info("read recogn image") 
+            else:
+                logging.info("server recogn image error:%s" % info["image"]["result"]["status"])
+
+    def sendImagePthread(self):
+        while True:
+            file_list = os.listdir(self.path)
+            for filename in file_list:
                 '''读取内容'''
-                f = open(self.path+'/'+file, 'rb')
+                if filename.startswith("upload"):
+                    continue
+                print("filename:%s" % filename) 
+                f = open(self.path+'/'+filename, 'rb')
                 mbinary = f.read()
+                os.rename(self.path + '/' + filename, self.path + '/' + "upload" + filename)
                 '''生成md5值'''
                 md5 = hashlib.md5()
                 md5.update(mbinary)
@@ -122,32 +146,19 @@ class Client:
                 self.ws.send(jsonmsg)
 #logging.info("send : %s" % jsonmsg)
                 '''等待接收数据'''
-                recvmsg = self.ws.recv()
-                if not recvmsg:
-                    '''如果没接收到数据，因为是阻塞接收，不可能走到这里'''
-                    logging.info("--------------------")
-                    self.ws.send_binary(mbinary)
-                else:
-                    print("test recv: %s" % recvmsg)
-                    info = json.loads(recvmsg)
-                    if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "ready":
-                        continue
-                    else:
-                        logging.info("upload image error")
-            logging.info("all image upload")
-            while True:
-                recv = self.ws.recv()
-                info = json.loads(recv)
-                logging.info(info)
-                logging.info("------------")
-#logging.info(info)
-                if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "success":
-                    print("wait for result") 
-                    recv = self.ws.recv()
-                    data = json.loads(recv)
-                    logging.info(data)
-                else:
-                    logging.info("server recogn image error:%s" % info["image"]["result"]["status"])
+#                recvmsg = self.ws.recv()
+#                if not recvmsg:
+#                    '''如果没接收到数据，因为是阻塞接收，不可能走到这里'''
+#                    logging.info("--------------------")
+#                    self.ws.send_binary(mbinary)
+#                else:
+#                    print("test recv: %s" % recvmsg)
+#                    info = json.loads(recvmsg)
+#                    if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "ready":
+#                        continue
+#                    else:
+#                        logging.info("upload image error")
+
             pass
 
 if __name__ == '__main__':

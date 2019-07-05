@@ -108,7 +108,7 @@ class ImageHandler:
                 if isWaitForResult == True:
                     logging.info("wait for %d..." % WaitTime)
                     WaitTime = WaitTime + 1
-                    if WaitTime > 15:
+                    if WaitTime > 3:
                         isWaitForResult = False
                         WaitTime = 0
                         try:

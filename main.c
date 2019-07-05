@@ -25,21 +25,24 @@ static int iRetryRecogn = 0;
 
 void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD dwUser)
 {
-    char sendbuffer[128] = {0};
+    char sendbuff[128] = {0};
     //与结构体CLIENT_LPRC_PLATE_RESULTEX中的对应元素大小一致
     char colorbuff[8] = {0};
     char platebuff[16] = {0};
     
     if (strcmp(recResult->chCLIENTIP, pstrCameraIN_ip) == 0) {
+        printf("callback\n");
         //有车进入停车场
         if (recResult->pPlateImage.nLen > 0) {
             gb_to_utf8(recResult->chColor, colorbuff, 8);
             gb_to_utf8(recResult->chLicense, platebuff, 16);
             //sprintf(sendbuffer, "Color:%s,Plate:%s", recResult->chColor, recResult->chLicense);
-            sprintf(sendbuffer, "Color:%s,Plate:%s", colorbuff, platebuff);
-            sendMsgQueue(siMsgID, CLIENT_TYPE, (char *)&sendbuffer, sizeof(sendbuffer));
+            sprintf(sendbuff, "Color:%s,Plate:%s", colorbuff, platebuff);
+            sendMsgQueue(siMsgID, CLIENT_TYPE, (char *)&sendbuff, sizeof(sendbuff));
             isWaitRecogn = false;
             iRetryRecogn = 0;
+        } else {
+            printf("callback null\n");
         }
     } 
 }
@@ -71,7 +74,7 @@ static void pthread_doorlockctl_handler(void *arg)
 
     while(1)
     {
-        tv.tv_sec = 1;
+        tv.tv_sec = 0;
         tv.tv_usec = 500 * 1000;
         FD_ZERO(&read_fds);
         FD_SET(fd, &read_fds);
