@@ -7,9 +7,11 @@ from os import PathLike
 from PIL import Image
 import hashlib
 
-PATH="Picture/"
+PATH="Picture"
 
 class CtrlImage:
+    
+    saveImageDir = PATH
     #构造函数
     def __init__(self):
         pass
@@ -18,12 +20,12 @@ class CtrlImage:
         dirlist = name.split('-')
         path = "%s/%s/%s/%s" % (dirlist[0], dirlist[1], dirlist[2], dirlist[3])
         logging.info("save:%s" % name)
-        if not os.path.exists(PATH+path):
-            os.makedirs(PATH+path)
-        if os.path.isfile(PATH+path+'/'+name):
+        if not os.path.exists(PATH + '/' + path):
+            os.makedirs(PATH + '/' + path)
+        if os.path.isfile(PATH + '/' + path + '/' + name):
             #name = name + "_1"
-            os.remove(PATH+path+'/'+name)
-        dstfile = open(PATH+path+'/'+name, 'wb')
+            os.remove(PATH + '/' + path + '/' + name)
+        dstfile = open(PATH + '/' + path + '/' + name, 'wb')
         dstfile.write(data)
         dstfile.close()
         pass
@@ -51,6 +53,9 @@ class CtrlImage:
             return True
         else:
             return False
+
+    def getSaveImageDir(self):
+        return self.saveImageDir;
 
 if __name__ == '__main__':
     x = CtrlImage()

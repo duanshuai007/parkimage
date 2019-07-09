@@ -123,13 +123,23 @@ static void pthread_doorlockctl_handler(void *arg)
 int main(int argc, char **argv)
 {
     int     ret;
-    char    *chPath = (char *)"./Picture";
+    char    chPath[20] = {0};
     pthread_t pthread_doorctl_id;
 
     int server_fd;
     struct sockaddr_in server_addr;
     char recvbuff[128];
     int len;
+
+
+    if (argc < 2) {
+        printf("main.c parameters must 1\n");
+        printf("expamle: ./main saveimagedir\n");
+        return 1;
+    }
+
+    strncpy(chPath, argv[1], strlen(argv[1]));
+    printf("main.c: save Image Path:%s\n", chPath);
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;

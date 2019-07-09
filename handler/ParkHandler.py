@@ -374,11 +374,11 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
                 color = msg["recogn"]["color"] 
                 plate = msg["recogn"]["plate"]
 
-            logging.info("gena name = %s " % name)
+            logging.info("recv Recognition Message, ImageName: %s" % name)
             mresp = self.genarateRecognRespMsg(name, status, color, plate)
 
             try:
-                logging.info("send recogn message!")
+                logging.info("send recogn message: status = %s, color=%s, plate=%s!" % (status, color, plate))
                 self.write_message(mresp)
             except Exception as e:
                 logging.warn("client connect error")

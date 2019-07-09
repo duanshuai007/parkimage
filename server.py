@@ -27,6 +27,7 @@ from handler.ParkHandler import ParkHandler
 import Constant
 from HandleDB import HandleLoginDB
 from HandleDB import ParkDB
+from Image import CtrlImage
 import ImageHandler
 import TheQueue 
 #import TheUniqueID
@@ -66,7 +67,7 @@ class SerApplication(tornado.web.Application):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',datefmt='%Y-%m-%d')
+    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
     tornado.options.parse_command_line()
     app = SerApplication()
     app.listen(Constant.options.port)
@@ -86,8 +87,15 @@ def main():
 
     TheQueue.init()
     dicts = TheQueue.get()
-    ihand = ImageHandler.ImageHandler(dicts)
-    ihand.run()
+    
+    ctrlImage = CtrlImage()
+    path = ctrlImage.getSaveImageDir()
+
+    imageHandler = ImageHandler.ImageHandler([dicts, path, ])
+    imageHandler.run()
+
+#   cmd = "%s %s &" %("./main", path)
+#   os.system(cmd)
 
     tornado.ioloop.IOLoop.instance().start()
     logging("main ioloop start down")

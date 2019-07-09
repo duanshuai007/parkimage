@@ -18,14 +18,17 @@ class ImageHandler:
     server = ''
     socketconn = ''
     resp_msg = {"name":"","recogn":{"status":"","color":"","plate":""}}
+    saveImagePath = ""
     '''与websocket进程之间发送图像识别消息的'''
     mid = ""
-    def __init__(self, qdict):
-        if len(qdict) != 1:
-            return 
+    def __init__(self, msglist):
+        qdict = msglist[0]
+        path = msglist[1]
         '''用来接收websocket线程发送过来的图片识别的请求信息'''
         self.rqueue = qdict["recv"]
+        self.saveImagePath = path
         logging.info(qdict)
+        logging.info(path)
         self.SocketInit()
 
     def run(self):
@@ -65,11 +68,11 @@ class ImageHandler:
                     msg = r.get()
                     waitForImagePlateQueue = msg[0]
                     self.resp_msg["name"] = msg[1]
-                    logging.info("recv image name:%s" % self.resp_msg["name"] )
+                    logging.info("The name of the image waiting to be identified: %s" % self.resp_msg["name"] )
 
                     if self.socketconn:    
                         dirlist = self.resp_msg["name"].split('-')
-                        path = "Picture/%s/%s/%s/%s/" % (dirlist[0], dirlist[1], dirlist[2], dirlist[3])
+                        path = "%s/%s/%s/%s/%s/" % (self.saveImagePath, dirlist[0], dirlist[1], dirlist[2], dirlist[3])
                         '''将图片显示在屏幕上'''
                         cmd = "eog %s%s -f -w &" % (path, self.resp_msg["name"])
                         os.system(cmd)
@@ -81,6 +84,7 @@ class ImageHandler:
                         except Exception as e:
                             '''发现图片识别socket连接异常，将该消息重新放回队列中'''
                             r.put(msg)
+                            logging.warn("locale socket connect error")
                             logging.warn(e.args)
                             try:
                                 waitForImagePlateQueue.put(self.genarateResp("recogn pthread connect abnormal", "", ""))
@@ -89,15 +93,17 @@ class ImageHandler:
                     else:
                         try:
                             '''发现图片识别socket没连接，将该消息重新放回队列'''
-                            logging.info("reput msg[%s] into queue!")
+                            '''logging.info("reput msg[%s] into queue!")
                             logging.info(msg)
+                            '''
+                            logging.info("the locale socket conn is null, no client connect")
                             if r.full() == True:
                                 logging.info("queue is full")
                             else:
                                 r.put(msg)
                             waitForImagePlateQueue.put(self.genarateResp("recogn pthread no connected", "", ""))
                         except Exception as e:
-                            logging.warn("this is error")
+                            logging.warn("waitForImagePlateQueue error")
                             logging.warn(e.args)
                 else:
                     '''logging.info("queue is empty")'''
@@ -106,7 +112,7 @@ class ImageHandler:
             readable,writeable,exceptional = select.select(inputs, outputs, inputs, 1)
             if not (readable or writeable or exceptional):
                 if isWaitForResult == True:
-                    logging.info("wait for %d..." % WaitTime)
+                    logging.info("wait for recogn image: %ds..." % WaitTime)
                     WaitTime = WaitTime + 1
                     if WaitTime > 3:
                         isWaitForResult = False
@@ -163,13 +169,14 @@ class ImageHandler:
                                     platelist = reclist[1].split(':')
                                     plate = platelist[1]
                             except Exception as e:
-                                logging.warn(e.args)
+                                logging.warn("locale socket connect error")
                                 status = "recogn socket error"
 
                             try:
+                                logging.info("Image Recognition OK, send result to ParkHandler thread")
                                 waitForImagePlateQueue.put(self.genarateResp(status, color, plate)) #or failed
                             except Exception as e:
-                                logging.warn(e.args)
+                                logging.warn("waitForImagePlateQueue error")
                             isWaitForResult = False
                         else:
                             logging.warn('Client Close!')

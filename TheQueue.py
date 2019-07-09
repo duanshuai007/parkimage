@@ -11,7 +11,7 @@ import logging
 '''
 def init():
     global _global_dict
-    _global_dict = {"recv":queue.Queue(32),}
+    _global_dict = {"recv":queue.Queue(128),}
     logging.info("queue init")
 
 def get():
