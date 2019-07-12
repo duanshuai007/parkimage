@@ -12,16 +12,14 @@
 #include <pthread.h>
 
 #include "LPRCClientSDK.h"
-#include "msgqueue.h"
+#include "common.h"
 #include "utf8.h"
-
-#define CAMERA_PORT 8080
-char *pstrCameraIN_ip = (char *)"192.168.200.211";
-//char *pstrCameraOUT_ip = (char *)"192.168.200.213";
 
 static int siMsgID = 0;
 static bool isWaitRecogn = false;
 static int iRetryRecogn = 0;
+static char sCameraIp[20];
+static int sCameraPort;
 
 void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD dwUser)
 {
@@ -30,8 +28,8 @@ void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD d
     char colorbuff[8] = {0};
     char platebuff[16] = {0};
     
-    if (strcmp(recResult->chCLIENTIP, pstrCameraIN_ip) == 0) {
-        printf("callback\n");
+    if (strcmp(recResult->chCLIENTIP, sCameraIp) == 0) {
+        //printf("callback\n");
         //有车进入停车场
         if (recResult->pPlateImage.nLen > 0) {
             gb_to_utf8(recResult->chColor, colorbuff, 8);
@@ -42,7 +40,7 @@ void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD d
             isWaitRecogn = false;
             iRetryRecogn = 0;
         } else {
-            printf("callback null\n");
+            //printf("callback null\n");
         }
     } 
 }
@@ -50,7 +48,7 @@ void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD d
 // 输出连接状态的回调函数
 void ConnectStatus(char *chCLIENTIP, UINT Status, LDWORD dwUser)
 {
-    if(strcmp(chCLIENTIP, pstrCameraIN_ip) == 0)
+    if(strcmp(chCLIENTIP, sCameraIp) == 0)
     {
         if(Status == 0)
         {
@@ -74,8 +72,8 @@ static void pthread_doorlockctl_handler(void *arg)
 
     while(1)
     {
-        tv.tv_sec = 0;
-        tv.tv_usec = 500 * 1000;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
         FD_ZERO(&read_fds);
         FD_SET(fd, &read_fds);
         //FD_SET(fd, &write_fds);
@@ -88,7 +86,7 @@ static void pthread_doorlockctl_handler(void *arg)
             if (isWaitRecogn == true) {
                 printf("retry trigger\n");
                 iRetryRecogn++;
-                CLIENT_LPRC_SetTrigger(pstrCameraIN_ip, CAMERA_PORT);
+                CLIENT_LPRC_SetTrigger(sCameraIp, sCameraPort);
                 if (iRetryRecogn > 5) {
                     iRetryRecogn = 0;
                     isWaitRecogn = false;
@@ -111,8 +109,8 @@ static void pthread_doorlockctl_handler(void *arg)
                     continue;
                 }
                 printf("C Socket Recv:%s\r\n", recvbuff);
-                sleep(1);
-                CLIENT_LPRC_SetTrigger(pstrCameraIN_ip, CAMERA_PORT);
+                //sleep(1);
+                //CLIENT_LPRC_SetTrigger(sCameraIp, sCameraPort);
                 isWaitRecogn = true;
                 iRetryRecogn = 0;
             } 
@@ -120,6 +118,14 @@ static void pthread_doorlockctl_handler(void *arg)
     }
 }
 
+/*
+ *  传入参数列表
+ *  参数1: 图片保存地址
+ *  参数2: 本地socket端口号
+ *  参数3: 相机IP
+ *  参数4: 相机Port
+ *  参数5: C程序内部的生成消息队列的文件
+ */
 int main(int argc, char **argv)
 {
     int     ret;
@@ -130,22 +136,37 @@ int main(int argc, char **argv)
     struct sockaddr_in server_addr;
     char recvbuff[128];
     int len;
+    int port;
+    char msg_keyfile_name[100];
 
-
-    if (argc < 2) {
-        printf("main.c parameters must 1\n");
-        printf("expamle: ./main saveimagedir\n");
+    if (argc < 6) {
+        printf("paramters num = %d\n", argc);
+        printf("main.c parameters must be 5\n");
+        printf("expamle: ./main saveimagedir   local_socket_port   camera_ip   camera_port   keyfile_path_name\n");
         return 1;
     }
 
     strncpy(chPath, argv[1], strlen(argv[1]));
-    printf("main.c: save Image Path:%s\n", chPath);
+    printf("save Image Path:%s\n", chPath);
+
+    port = atoi(argv[2]);
+    printf("locale socket port = %d\n", port);
+
+    sCameraPort = atoi(argv[4]);
+    memset(sCameraIp, 0, sizeof(sCameraIp));
+    strncpy(sCameraIp, argv[3], strlen(argv[3]));
+    printf("camera ip = %s, port = %d\n", sCameraIp, sCameraPort);
+
+    memset(msg_keyfile_name, 0, sizeof(msg_keyfile_name));
+    strncpy(msg_keyfile_name, argv[5], strlen(argv[5]));
+    printf("msgqueue keyfile : %s\n", msg_keyfile_name);
+
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     //server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_addr.sin_port = htons(9876);
+    server_addr.sin_port = htons(port);
 
     server_fd = socket(PF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
@@ -153,7 +174,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    siMsgID = createMsgQueue(MSG_KEYFILE);
+    siMsgID = createMsgQueue(msg_keyfile_name);
     if (siMsgID == -1) {
         printf("createMsgQueue failed\r\n");
         return -1;
@@ -169,14 +190,14 @@ int main(int argc, char **argv)
     //CLIENT_LPRC_RegWTYGetGpioState((CLIENT_LPRC_GetGpioStateCallback) GPIOCallBackHandler);
 
     // 初始化。（多个相机的话，需要调用多次这个接口,输入不同的IP地址）
-    ret =  CLIENT_LPRC_InitSDK(CAMERA_PORT, NULL, 0, pstrCameraIN_ip, 1);
+    ret = CLIENT_LPRC_InitSDK(sCameraPort, NULL, 0, sCameraIp, 1);
     if (ret == 1)
     {
-        printf("%s InitSDK fail\n\tthen quit\r\n", pstrCameraIN_ip);
+        printf("%s InitSDK fail\n\tthen quit\r\n", sCameraIp);
         CLIENT_LPRC_QuitSDK();
         return -1;
     } else {
-        printf("%s InitSDK success\n", pstrCameraIN_ip);
+        printf("%s InitSDK success\n", sCameraIp);
     }
 
     if (connect(server_fd, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) < 0) {
@@ -209,5 +230,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-

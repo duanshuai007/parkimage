@@ -27,7 +27,7 @@ start() {
     pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v grep | awk '{print $2}'`
     if [ ! -n "${pid}" ]
     then
-        /usr/bin/python3 /home/duan/backserver/server.py &
+        python3 /home/duan/backserver/server.py &
         sleep 1
     else
         echo "${SERVER_NAME} already running"
@@ -36,7 +36,7 @@ start() {
     pid=`ps -ef | grep -w ${SERVER_MAIN_NAME} | grep -v grep | awk '{print $2}'`
     if [ ! -n "${pid}" ]
     then
-        /usr/bin/python3 /home/duan/backserver/server_main.py &
+        python3 /home/duan/backserver/server_main.py &
     else
         echo "${SERVER_MAIN_NAME} already running"
     fi

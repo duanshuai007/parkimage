@@ -2,18 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # 系统自带的模块
-import json
 import os
 import ssl
 import logging
-import time
-import base64
-import hmac
-import threading
-import queue
+import sys
 
 # 第三方模块
-import redis
+#import redis
 import tornado.web
 import tornado.websocket
 import tornado.ioloop
@@ -23,14 +18,10 @@ from tornado.web import Application
 
 # 自定义模块
 from handler.ParkHandler import ParkHandler
-
-import Constant
-from HandleDB import HandleLoginDB
-from HandleDB import ParkDB
 from Image import CtrlImage
 import ImageHandler
 import TheQueue 
-#import TheUniqueID
+import Config
 
 class MyTest(tornado.websocket.WebSocketHandler):
 
@@ -67,10 +58,20 @@ class SerApplication(tornado.web.Application):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
+    websocket_port = 0
+    logfile = ''
+#path = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+    logfile = Config.getConfigEnv("LOGFILE")
+    websocket_port = Config.getConfigEnv("WEBSOCKET_PORT")
+
+    if not logfile:
+        logging.err("LogFile not define, please add to config.ini")
+    print("logfile name:%s" % logfile)
+    logging.basicConfig(filename=logfile, level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
     tornado.options.parse_command_line()
     app = SerApplication()
-    app.listen(Constant.options.port)
+    app.listen(websocket_port)
 
     '''
     ssl处理，
@@ -83,19 +84,11 @@ def main():
     # httpServer = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
     # httpServer.listen(Constant.options.port, Constant.options.host)
 
-#TheUniqueID.init()
-
     TheQueue.init()
     dicts = TheQueue.get()
     
-    ctrlImage = CtrlImage()
-    path = ctrlImage.getSaveImageDir()
-
-    imageHandler = ImageHandler.ImageHandler([dicts, path, ])
+    imageHandler = ImageHandler.ImageHandler([dicts,])
     imageHandler.run()
-
-#   cmd = "%s %s &" %("./main", path)
-#   os.system(cmd)
 
     tornado.ioloop.IOLoop.instance().start()
     logging("main ioloop start down")

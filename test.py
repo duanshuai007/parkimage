@@ -60,7 +60,7 @@ class Client:
         }
     }
     
-    path = "/home/duan/Pictures"
+#path = "/home/duan/Pictures"
     ws = ''
 
     def __init__(self, path):
@@ -101,19 +101,20 @@ class Client:
     def recvRecognThread(self):
         while True:
             recv = self.ws.recv()
-            info = json.loads(recv)
-            logging.info(info)
-            logging.info("------------")
+            if recv:
+                info = json.loads(recv)
+                logging.info(info)
+                logging.info("------------")
 #logging.info(info)
-            if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "success":
-                print("wait for result") 
-                recv = self.ws.recv()
-                data = json.loads(recv)
-                logging.info(data)
-            elif info["type"] == "recogn resp" and info["image"]["result"]["status"] == "ready":
-                logging.info("read recogn image") 
-            else:
-                logging.info("server recogn image error:%s" % info["image"]["result"]["status"])
+                if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "success":
+                    print("wait for result") 
+                    recv = self.ws.recv()
+                    data = json.loads(recv)
+                    logging.info(data)
+                elif info["type"] == "recogn resp" and info["image"]["result"]["status"] == "ready":
+                    logging.info("read recogn image") 
+                else:
+                    logging.info("server recogn image error:%s" % info["image"]["result"]["status"])
 
     def sendImagePthread(self):
         while True:

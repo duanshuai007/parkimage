@@ -11,8 +11,6 @@ struct park_msgbuf {
 #define SERVER_TYPE     0xa55a
 #define CLIENT_TYPE     0x9a4f
 
-#define MSG_KEYFILE    "/home/duan/park/msgkey.file"
-
 int createMsgQueue(char *key);
 int getMsgQueue(char *key);
 int destoryMsgQueue(int msg_id);

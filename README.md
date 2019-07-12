@@ -18,11 +18,12 @@
 >> hashlib  
 >> base64  
 >> hmac  
+>> websocket客户端所用的库是websocket_client
 
 
 ## 使用方法
 
-> 在Image.py中设置PATH宏定义，这个宏定义了websocket接收到的图片以及相机识别图片保存的根目录，注意PATH不能以'\'为结尾字符。  
-
-> 在shell界面执行crontab -e，进入编辑页面，新开一行输入`*/1 * * * * /bin/sh /home/duan/backserver/crontab_watch.sh`,该指令功能是每隔一分钟执行crontab_watch.sh脚本。
+> 在config.ini文件中配置各个参数，一般保持默认即可  
+> 脚本watch.sh start启动程序,watch.sh stop停止程序,watch.sh restart重新启动程序.  `
+> 在shell界面执行crontab -e，进入编辑页面，新开一行输入`*/1 * * * * export DISPLAY=:0 /bin/sh /home/duan/backserver/crontab_watch.sh`,该指令功能是每隔一分钟执行crontab_watch.sh脚本。
 > 想要立即执行也可以在工程目录内执行`./crontab_watch.sh`
