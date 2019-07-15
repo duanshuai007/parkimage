@@ -3,6 +3,9 @@
 > 该程序使用Python3.6
 
 ## 程序中涉及到的python库
+ 
+> 安装pip3的方法  
+>> sudo apt-get install python3-pip  
 
 > 以下是程序中涉及到的系统库  
 >> tornado  
@@ -14,11 +17,12 @@
 >> socket  
 >> select  
 >> os  
->> PIL   
+>> PIL的模块名为Pillow，通过pip3工具安装  
 >> hashlib  
 >> base64  
 >> hmac  
->> websocket客户端所用的库是websocket_client
+>> websocket客户端所用的库是websocket_client  
+>> tkinter模块安装方法有些特殊，需要通过sudo apt-get install python3-tk指令来进行安装
 
 
 ## 使用方法

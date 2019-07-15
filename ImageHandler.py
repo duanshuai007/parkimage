@@ -40,6 +40,9 @@ class ImageHandler:
         self.saveImagePath = Config.getConfigEnv("SAVE_IMAGE_DIR")
         self.SocketInit()
 
+    '''
+    创建一个新的线程来专门显示图片
+    '''
     def ImageShowProcess(self):
         self.root = tk.Tk()
         self.root.attributes("-fullscreen", True)
@@ -61,6 +64,7 @@ class ImageHandler:
         imgThread.setDaemon(True)
         imgThread.start()
 
+    '''根据屏幕尺寸设置图片的大小'''
     def resize(self, w, h, w_box, h_box, pil_image):
         '''
         resize a pil_image object so it will fit into

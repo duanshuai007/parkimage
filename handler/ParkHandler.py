@@ -58,6 +58,7 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
     '''
     ImageReconQueue = ""
     ImageSeconQueue = ""
+    DelayImageRecognQueue = ""
     '''
     处理请求信息的消息队列,用于本线程内部通信
     ReqQueue是在本程序内部的接收到websocket数据后将数据请求信息放入消息队列中等待处理的消息队列
@@ -118,6 +119,8 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
         }
     }
 
+    count = 0
+
     '''
     用来设置该模块能够被tornado server程序调用
     '''
@@ -136,20 +139,26 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
         '''
         self.ReqQueue = queue.Queue(64)
         self.ImageSeconQueue = queue.Queue(10)
+        self.DelayImageRecognQueue = queue.Queue(20)
         self.ImageReconQueue = qlist["recv"]
         logging.info(qlist)
     
-        self.objPer = tornado.ioloop.PeriodicCallback(self.RegisterEvent, 500)
+        self.objPer = tornado.ioloop.PeriodicCallback(self.RegisterEvent, 2000)
         self.objPer.start()
+
+        self.pingObj = tornado.ioloop.PeriodicCallback(self.pingMessage, 5000)
+        self.pingObj.start()
+
         self.startTime = time.time()
         
-        self.loopRdReqQueue = tornado.ioloop.PeriodicCallback(self.ReadQueueThreadHandler, 5)
-        self.loopRecRegconResultQueueevent = tornado.ioloop.PeriodicCallback(self.RecRegconResEvent, 5)
+        self.loopRdReqQueue = tornado.ioloop.PeriodicCallback(self.ReadQueueThreadHandler, 50)
+        self.loopRecRegconResultQueueevent = tornado.ioloop.PeriodicCallback(self.RecRegconResEvent, 50)
         self.loopRecRegconResultQueueevent.start()
         pass
 
     def on_close(self):
         self.objPer.stop()
+        self.pingObj,stop()
         logging.info("park on_close(), A client disconnected")
 
     def on_message(self, message):
@@ -169,7 +178,8 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
                 self.loopRdReqQueue.start()
 
     def on_pong(self, data):
-        logging.info("park on_pong(), keep_alive,{}")
+        logging.info("park on_pong(), keep_alive,{}" + str(self.count))
+        self.count = 0
 
     def on_ping(self, data):
         logging.info("park on_ping(), data:" + str(data))
@@ -190,6 +200,7 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
             self.write_message(self.generateLoginResp("key error"))
             self.close()
             return
+
         if self.msg_login_request[LOGIN_KEY_CONTENT].keys() ^ info[LOGIN_KEY_CONTENT].keys():
             self.write_message(self.generateLoginResp("child key error"))
             self.close()
@@ -227,6 +238,13 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
         self.objPer.stop()
         if self.isRegister == False:
             self.close()
+
+    def pingMessage(self):
+        if(self.count == 5):
+            self.close()
+            return
+        self.count = self.count + 1
+        self.ping("hello ping")
     
 
     '''
@@ -325,8 +343,18 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
                 queue是本线程接收图片识别信息的消息队列
                 picname为图片名，能够根据图片名定位到图片的位置
             '''
-            self.write_message(self.genarateRespMsg(dictinfo, "ready", "", ""))
-            self.ImageReconQueue.put([self.ImageSeconQueue, name])
+            if self.ImageReconQueue.full():
+                '''
+                如果图片识别进程的消息队列已经满了，那么这几条消息就会被存放起来
+                客户端收到该响应后应该避免再向服务器发送请求，保存在延时处理队列中
+                的消息被处理完成后会向服务器发送正常处理结束的响应，接收到响应后，
+                服务器才应该进行接下来的识别请求的发送
+                '''
+                self.write_message(self.genarateRespMsg(dictinfo, "recogn queue full", "", ""))
+                self.DelayImageRecognQueue.put([self.ImageSeconQueue, name])
+            else:
+                self.write_message(self.genarateRespMsg(dictinfo, "ready", "", ""))
+                self.ImageReconQueue.put([self.ImageSeconQueue, name])
 #            if self.iHasImageReconResult == 0:
 #               self.loopRecRegconResultQueueevent.start()
 #           self.iHasImageReconResult = self.iHasImageReconResult + 1
@@ -386,6 +414,19 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
 #                self.iHasImageReconResult = self.iHasImageReconResult - 1
 #           if self.iHasImageReconResult == 0:
 #               self.loopRecRegconResultQueueevent.stop()
+        '''
+        如果延迟识别队列非空，则会先判断图片识别队列是不是满的
+        不是满的，则从延迟队列中提取一条消息，发送到识别队列中
+        '''
+        if not self.DelayImageRecognQueue.empty():
+            if not self.ImageReconQueue.full():
+                msg = self.DelayImageRecognQueue.get()
+                try:
+                    self.ImageReconQueue.put(msg)
+                except Exception as e:
+                    self.DelayImageRecognQueue.put(msg)
+                    logging.info("DelayRecognQueue to ImageRecognQueue failed, beacuse ImageQueue is full")
+                    logging.info(e.args)
         pass
 
     def genarateImageSaveName(self, dictinfo):

@@ -74,7 +74,7 @@ class Client:
         '''客户端首先需要登陆到服务器上'''        
         jsonmsg = json.dumps(self.msg_login)
         print(jsonmsg)
-        self.ws.connect("ws://192.168.200.210:4000/park")
+        self.ws.connect("ws://192.168.200.212:4000/park")
         self.ws.send(jsonmsg)
         '''
         验证登陆是否成功

@@ -129,7 +129,7 @@ static void pthread_doorlockctl_handler(void *arg)
 int main(int argc, char **argv)
 {
     int     ret;
-    char    chPath[20] = {0};
+    char    chPath[128];
     pthread_t pthread_doorctl_id;
 
     int server_fd;
@@ -146,6 +146,19 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    if (strlen(argv[1]) > sizeof(chPath)) {
+        printf("save img path buffer is too short\n");
+        printf("you should modify main.c file chPath[] more bigger\n");
+        return 1;
+    }
+
+    if (strlen(argv[5]) > sizeof(msg_keyfile_name)) {
+        printf("save key file path buffer is too short\n");
+        printf("you should modify main.c file msg_keyfile_name[] more bigger\n");
+        return 1;
+    }
+
+    memset(chPath, 0, sizeof(chPath));
     strncpy(chPath, argv[1], strlen(argv[1]));
     printf("save Image Path:%s\n", chPath);
 

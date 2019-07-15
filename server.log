@@ -1,35 +1,101 @@
-2019-07-12 17:39:03 TheQueue.py[line:15]: queue init
-2019-07-12 17:39:03 ImageHandler.py[line:38]: {'recv': <queue.Queue object at 0x7f4efcfe5a90>}
-2019-07-12 17:39:04 server_main.py[line:25]: ------------------------
-2019-07-12 17:39:04 server_main.py[line:26]: ---server_main.py start---
-2019-07-12 17:39:04 server_main.py[line:29]: ******************
-2019-07-12 17:39:04 server_main.py[line:30]: /home/duan/backserver/main /home/duan/backserver/Picture/ 9876 192.168.200.211 8080 /home/duan/backserver/msgkey.file &
-2019-07-12 17:39:04 server_main.py[line:31]: ******************
-2019-07-12 17:39:07 ImageHandler.py[line:177]: localhost socket has new connect
-2019-07-12 17:39:38 web.py[line:2246]: 101 GET /park (192.168.200.210) 2.52ms
-2019-07-12 17:39:38 ParkHandler.py[line:128]: websocket has client connected!
-2019-07-12 17:39:38 ParkHandler.py[line:140]: {'recv': <queue.Queue object at 0x7f4efcfe5a90>}
-2019-07-12 17:39:38 ParkHandler.py[line:218]: connect OK
-2019-07-12 17:39:38 Image.py[line:53]: the image md5: 91f0dfdd758fe6ad5e1a897140bd1275
-2019-07-12 17:39:38 Image.py[line:25]: save:path=/home/duan/backserver/Picture/sy/wanda/1/9 name=sy-wanda-1-9-20190712173938-6319.jpg
-2019-07-12 17:39:38 Image.py[line:53]: the image md5: 88b5e08dc28c4506507de502cf073f86
-2019-07-12 17:39:38 Image.py[line:25]: save:path=/home/duan/backserver/Picture/sy/wanda/1/9 name=sy-wanda-1-9-20190712173938-8874.jpg
-2019-07-12 17:39:39 ImageHandler.py[line:119]: The name of the image waiting to be identified: sy-wanda-1-9-20190712173938-6319.jpg
-2019-07-12 17:39:39 ImageHandler.py[line:125]: dispay image in screen!
-2019-07-12 17:39:39 ImageHandler.py[line:78]: show img name:/home/duan/backserver/Picture/sy/wanda/1/9/sy-wanda-1-9-20190712173938-6319.jpg
-2019-07-12 17:39:39 ImageHandler.py[line:81]: windows width=1024, height=768
-2019-07-12 17:39:41 ImageHandler.py[line:162]: wait for recogn image: 0s...
-2019-07-12 17:39:41 ImageHandler.py[line:207]: 中文:Color:蓝,Plate:津A12345
-2019-07-12 17:39:41 ImageHandler.py[line:223]: Image Recognition OK, send result to ParkHandler thread
-2019-07-12 17:39:41 ImageHandler.py[line:119]: The name of the image waiting to be identified: sy-wanda-1-9-20190712173938-8874.jpg
-2019-07-12 17:39:41 ImageHandler.py[line:125]: dispay image in screen!
-2019-07-12 17:39:41 ImageHandler.py[line:78]: show img name:/home/duan/backserver/Picture/sy/wanda/1/9/sy-wanda-1-9-20190712173938-8874.jpg
-2019-07-12 17:39:41 ImageHandler.py[line:81]: windows width=1024, height=768
-2019-07-12 17:39:41 ParkHandler.py[line:377]: recv Recognition Message, ImageName: sy-wanda-1-9-20190712173938-6319.jpg
-2019-07-12 17:39:41 ParkHandler.py[line:381]: send recogn message: status = success, color=蓝, plate=津A12345!
-2019-07-12 17:39:42 ImageHandler.py[line:162]: wait for recogn image: 0s...
-2019-07-12 17:39:43 ImageHandler.py[line:207]: 中文:Color:蓝,Plate:苏EQ513M
-2019-07-12 17:39:43 ImageHandler.py[line:223]: Image Recognition OK, send result to ParkHandler thread
-2019-07-12 17:39:43 ParkHandler.py[line:377]: recv Recognition Message, ImageName: sy-wanda-1-9-20190712173938-8874.jpg
-2019-07-12 17:39:43 ParkHandler.py[line:381]: send recogn message: status = success, color=蓝, plate=苏EQ513M!
-2019-07-12 17:40:03 ParkHandler.py[line:153]: park on_close(), A client disconnected
+2019-07-15 14:58:41 TheQueue.py[line:15]: queue init
+2019-07-15 14:58:41 ImageHandler.py[line:38]: {'recv': <queue.Queue object at 0x7f24ec9077b8>}
+2019-07-15 14:58:42 server_main.py[line:25]: ------------------------
+2019-07-15 14:58:42 server_main.py[line:26]: ---server_main.py start---
+2019-07-15 14:58:42 server_main.py[line:29]: ******************
+2019-07-15 14:58:42 server_main.py[line:30]: /home/duan/git/backserver/main /home/duan/git/backserver/Picture/ 9876 192.168.200.213 8080 /home/duan/git/backserver/msgkey.file &
+2019-07-15 14:58:42 server_main.py[line:31]: ******************
+2019-07-15 14:58:45 ImageHandler.py[line:181]: localhost socket has new connect
+2019-07-15 14:58:59 web.py[line:2246]: 101 GET /park (192.168.200.212) 0.40ms
+2019-07-15 14:58:59 ParkHandler.py[line:131]: websocket has client connected!
+2019-07-15 14:58:59 ParkHandler.py[line:144]: {'recv': <queue.Queue object at 0x7f24ec9077b8>}
+2019-07-15 14:58:59 ParkHandler.py[line:229]: connect OK
+2019-07-15 14:58:59 Image.py[line:53]: the image md5: 91f0dfdd758fe6ad5e1a897140bd1275
+2019-07-15 14:58:59 Image.py[line:25]: save:path=/home/duan/git/backserver/Picture/sy/wanda/1/9 name=sy-wanda-1-9-20190715145859-4558.jpg
+2019-07-15 14:58:59 Image.py[line:53]: the image md5: 88b5e08dc28c4506507de502cf073f86
+2019-07-15 14:58:59 Image.py[line:25]: save:path=/home/duan/git/backserver/Picture/sy/wanda/1/9 name=sy-wanda-1-9-20190715145859-2184.jpg
+2019-07-15 14:59:00 ImageHandler.py[line:123]: The name of the image waiting to be identified: sy-wanda-1-9-20190715145859-4558.jpg
+2019-07-15 14:59:00 ImageHandler.py[line:129]: dispay image in screen!
+2019-07-15 14:59:00 ImageHandler.py[line:82]: show img name:/home/duan/git/backserver/Picture/sy/wanda/1/9/sy-wanda-1-9-20190715145859-4558.jpg
+2019-07-15 14:59:00 ImageHandler.py[line:85]: windows width=1920, height=1080
+2019-07-15 14:59:01 ImageHandler.py[line:166]: wait for recogn image: 0s...
+2019-07-15 14:59:02 ImageHandler.py[line:211]: 中文:Color:蓝,Plate:蒙A12345
+2019-07-15 14:59:02 ImageHandler.py[line:227]: Image Recognition OK, send result to ParkHandler thread
+2019-07-15 14:59:02 ImageHandler.py[line:123]: The name of the image waiting to be identified: sy-wanda-1-9-20190715145859-2184.jpg
+2019-07-15 14:59:02 ImageHandler.py[line:129]: dispay image in screen!
+2019-07-15 14:59:02 ImageHandler.py[line:82]: show img name:/home/duan/git/backserver/Picture/sy/wanda/1/9/sy-wanda-1-9-20190715145859-2184.jpg
+2019-07-15 14:59:02 ImageHandler.py[line:85]: windows width=1920, height=1080
+2019-07-15 14:59:02 ParkHandler.py[line:405]: recv Recognition Message, ImageName: sy-wanda-1-9-20190715145859-4558.jpg
+2019-07-15 14:59:02 ParkHandler.py[line:409]: send recogn message: status = success, color=蓝, plate=蒙A12345!
+2019-07-15 14:59:03 ImageHandler.py[line:166]: wait for recogn image: 0s...
+2019-07-15 14:59:03 ImageHandler.py[line:211]: 中文:Color:蓝,Plate:苏EQ513M
+2019-07-15 14:59:03 ImageHandler.py[line:227]: Image Recognition OK, send result to ParkHandler thread
+2019-07-15 14:59:04 ParkHandler.py[line:405]: recv Recognition Message, ImageName: sy-wanda-1-9-20190715145859-2184.jpg
+2019-07-15 14:59:04 ParkHandler.py[line:409]: send recogn message: status = success, color=蓝, plate=苏EQ513M!
+2019-07-15 14:59:04 ParkHandler.py[line:181]: park on_pong(), keep_alive,{}1
+2019-07-15 14:59:05 web.py[line:1788]: Uncaught exception GET /park (192.168.200.212)
+HTTPServerRequest(protocol='http', host='192.168.200.212:4000', method='GET', uri='/park', version='HTTP/1.1', remote_ip='192.168.200.212')
+Traceback (most recent call last):
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/web.py", line 1699, in _execute
+    result = await result
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 278, in get
+    await self.ws_connection.accept_connection(self)
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 881, in accept_connection
+    await self._accept_connection(handler)
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 964, in _accept_connection
+    await self._receive_frame_loop()
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 1121, in _receive_frame_loop
+    self.handler.on_ws_connection_close(self.close_code, self.close_reason)
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 578, in on_ws_connection_close
+    self.on_connection_close()
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 570, in on_connection_close
+    self.on_close()
+  File "/home/duan/git/backserver/handler/ParkHandler.py", line 161, in on_close
+    self.pingObj,stop()
+NameError: name 'stop' is not defined
+2019-07-15 14:59:09 ioloop.py[line:909]: Exception in callback <bound method ParkHandler.pingMessage of <handler.ParkHandler.ParkHandler object at 0x7f24ec92b160>>
+Traceback (most recent call last):
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/ioloop.py", line 907, in _run
+    return self.callback()
+  File "/home/duan/git/backserver/handler/ParkHandler.py", line 247, in pingMessage
+    self.ping("hello ping")
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 447, in ping
+    raise WebSocketClosedError()
+tornado.websocket.WebSocketClosedError
+2019-07-15 14:59:14 ioloop.py[line:909]: Exception in callback <bound method ParkHandler.pingMessage of <handler.ParkHandler.ParkHandler object at 0x7f24ec92b160>>
+Traceback (most recent call last):
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/ioloop.py", line 907, in _run
+    return self.callback()
+  File "/home/duan/git/backserver/handler/ParkHandler.py", line 247, in pingMessage
+    self.ping("hello ping")
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 447, in ping
+    raise WebSocketClosedError()
+tornado.websocket.WebSocketClosedError
+2019-07-15 14:59:19 ioloop.py[line:909]: Exception in callback <bound method ParkHandler.pingMessage of <handler.ParkHandler.ParkHandler object at 0x7f24ec92b160>>
+Traceback (most recent call last):
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/ioloop.py", line 907, in _run
+    return self.callback()
+  File "/home/duan/git/backserver/handler/ParkHandler.py", line 247, in pingMessage
+    self.ping("hello ping")
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 447, in ping
+    raise WebSocketClosedError()
+tornado.websocket.WebSocketClosedError
+2019-07-15 14:59:24 ioloop.py[line:909]: Exception in callback <bound method ParkHandler.pingMessage of <handler.ParkHandler.ParkHandler object at 0x7f24ec92b160>>
+Traceback (most recent call last):
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/ioloop.py", line 907, in _run
+    return self.callback()
+  File "/home/duan/git/backserver/handler/ParkHandler.py", line 247, in pingMessage
+    self.ping("hello ping")
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 447, in ping
+    raise WebSocketClosedError()
+tornado.websocket.WebSocketClosedError
+2019-07-15 14:59:29 ioloop.py[line:909]: Exception in callback <bound method ParkHandler.pingMessage of <handler.ParkHandler.ParkHandler object at 0x7f24ec92b160>>
+Traceback (most recent call last):
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/ioloop.py", line 907, in _run
+    return self.callback()
+  File "/home/duan/git/backserver/handler/ParkHandler.py", line 247, in pingMessage
+    self.ping("hello ping")
+  File "/home/duan/.local/lib/python3.6/site-packages/tornado/websocket.py", line 447, in ping
+    raise WebSocketClosedError()
+tornado.websocket.WebSocketClosedError
+2019-07-15 15:03:16 ImageHandler.py[line:234]: main socket Client Close!
