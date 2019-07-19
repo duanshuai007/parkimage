@@ -19,13 +19,14 @@ def main():
     logfile =  Config.getConfigEnv("LOGFILE")
 
     if not logfile:
-        logging.err("LogFile not define, please add to config.ini")
-    logging.basicConfig(filename=logfile, level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
+        logging.error("LogFile not define, please add to config.ini")
+     
+    logging.basicConfig(filename=logfile, level=logging.DEBUG,format='%(asctime)s %(levelname)s:%(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
 
     logging.info("------------------------");
     logging.info("---server_main.py start---")
     #expamle: ./main   saveimagedir   local_socket_port   camera_ip   camera_port   keyfile_path_name
-    cmd = "%s/%s %s/ %s %s %s %s &" % (  path, "main", saveImgPath, port, camera_ip, camera_port, keyfile)
+    cmd = "%s/%s %s/ %s %s %s %s &" % (  path, "park_imagerecogn_c", saveImgPath, port, camera_ip, camera_port, keyfile)
     logging.info("******************")
     logging.info(cmd)
     logging.info("******************")

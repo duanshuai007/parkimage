@@ -1,14 +1,14 @@
 #!/bin/bash
 
-SERVER_NAME="server.py"
-SERVER_MAIN_NAME="main"
+SERVER_NAME="park_imagerecogn_server.py"
+SERVER_MAIN_NAME="park_imagerecogn_c"
 DIR_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
 stop() {
     pid=`ps -ef | grep -w ${SERVER_MAIN_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ -n "${pid}" ]
     then
-        echo "${SERVER_MAIN_NAME} pid:${pid}"
+        echo "${SERVER_MAIN_NAME} pid:${pid} kill" >> ${DIR_PATH}/server.log
         kill -9 ${pid}
     else
         echo "${SERVER_MAIN_NAME} already stop"
@@ -17,7 +17,7 @@ stop() {
     pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ -n "${pid}" ]
     then
-        echo "${SERVER_NAME} pid: ${pid}"
+        echo "${SERVER_NAME} pid: ${pid} kill" >> ${DIR_PATH}/server.log
         kill -9 ${pid}
     else
         echo "${SERVER_NAME} already stop"
@@ -28,8 +28,15 @@ start() {
     pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ ! -n "${pid}" ]
     then
-        python3 ${DIR_PATH}/server.py &
-        sleep 1
+        python3 ${DIR_PATH}/${SERVER_NAME} &
+        #因为在ImageHandler里面判断tkinter启动用了一秒延时，所以这里必须大于1秒
+        sleep 2
+        pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
+        if [ ! -n "${pid}" ]
+        then
+            echo "${SERVER_NAME} start failed" >> ${DIR_PATH}/server.log
+            exit
+        fi
     else
         echo "${SERVER_NAME} already running"
     fi

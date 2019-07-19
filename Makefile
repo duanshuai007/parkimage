@@ -20,7 +20,7 @@ export CC ROOT_DIR X_INCDIR
 .PHONY: clean
 
 all:$(SUBDIRS)
-	$(CC) $(C_FLAGS) $(X_INCDIR) main.c -o main $(OBJS) $(LIB) $(LD_FLAG)
+	$(CC) $(C_FLAGS) $(X_INCDIR) main.c -o park_imagerecogn_c $(OBJS) $(LIB) $(LD_FLAG)
 
 subdirs:$(SUBDIRS)
 $(SUBDIRS):

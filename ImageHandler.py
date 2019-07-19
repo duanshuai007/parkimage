@@ -13,7 +13,7 @@ import sys
 import tkinter as tk
 from PIL import Image, ImageTk
 
-import server
+import park_imagerecogn_server 
 from Image import CtrlImage
 import Config
 
@@ -29,31 +29,38 @@ class ImageHandler:
     win_w = 0
     win_h = 0
     local_port = 0
+    root_win_flag = False
+    socket_flag = False
     '''与websocket进程之间发送图像识别消息的'''
-    mid = ""
     def __init__(self, msglist):
         qdict = msglist[0]
         '''用来接收websocket线程发送过来的图片识别的请求信息'''
         self.rqueue = qdict["recv"]
+        logging.info("ImageHandler recveive image recogn queue:") 
         logging.info(qdict)
         self.local_port = Config.getConfigEnv("CAMERA_SOCKET_PORT")
         self.saveImagePath = Config.getConfigEnv("SAVE_IMAGE_DIR")
-        self.SocketInit()
+        self.socket_flag = self.SocketInit()
 
     '''
     创建一个新的线程来专门显示图片
     '''
     def ImageShowProcess(self):
-        self.root = tk.Tk()
-        self.root.attributes("-fullscreen", True)
-        self.root.attributes("-topmost",True)
-        self.root.update()
-        self.win_w = self.root.winfo_screenwidth()
-        self.win_h = self.root.winfo_screenheight()
-        self.img_label = tk.Label(self.root)
-        self.img_label.pack()
+        try:
+            self.root = tk.Tk()
+            self.root.attributes("-fullscreen", True)
+            self.root.attributes("-topmost",True)
+            self.root.update()
+            self.win_w = self.root.winfo_screenwidth()
+            self.win_h = self.root.winfo_screenheight()
+            self.img_label = tk.Label(self.root)
+            self.img_label.pack()
+            self.root_win_flag = True
 
-        self.root.mainloop()
+            self.root.mainloop()
+        except Exception as e:
+            logging.error("no $DISPLAY find, please 'export DISPLAY=:0'")
+
 
     def run(self):
         thread = threading.Thread(target = self.ImageProcess, args = [self.rqueue,])
@@ -63,6 +70,10 @@ class ImageHandler:
         imgThread = threading.Thread(target = self.ImageShowProcess, args = [])
         imgThread.setDaemon(True)
         imgThread.start()
+    
+    def isRunOK(self):
+        time.sleep(1)
+        return self.root_win_flag and self.socket_flag
 
     '''根据屏幕尺寸设置图片的大小'''
     def resize(self, w, h, w_box, h_box, pil_image):
@@ -89,11 +100,16 @@ class ImageHandler:
         self.img_label.image = img_jpg
 
     def SocketInit(self):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ipport = ('127.0.0.1', self.local_port)
-        self.server.bind(ipport)
-        self.server.listen(5)
-        return server
+        try:
+            self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            ipport = ('127.0.0.1', self.local_port)
+            self.server.bind(ipport)
+            self.server.listen(5)
+            return True
+        except Exception as e:
+            logging.error("locale socket error")
+        return False
+
 
     def genarateResp(self, mstatus, color, plate):
         self.resp_msg["recogn"]["status"] = mstatus
@@ -208,7 +224,7 @@ class ImageHandler:
                             plate = ""
                             try:
                                 recv_data = str(recv_data, encoding="utf-8")
-                                logging.info("中文:%s" % recv_data)
+                                #logging.info("中文:%s" % recv_data)
                                 '''failed表示识别失败'''
                                 if  recv_data == "Recogn Failed":   
                                     status = "failed"

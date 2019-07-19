@@ -66,29 +66,42 @@ def main():
     websocket_port = Config.getConfigEnv("WEBSOCKET_PORT")
 
     if not logfile:
-        logging.err("LogFile not define, please add to config.ini")
+        logging.error("LogFile not define, please add to config.ini")
     print("logfile name:%s" % logfile)
-    logging.basicConfig(filename=logfile, level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(filename=logfile, level=logging.DEBUG,format='%(asctime)s %(levelname)s:%(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
     tornado.options.parse_command_line()
     app = SerApplication()
-    app.listen(websocket_port)
+#app.listen(websocket_port)
 
     '''
     ssl处理，
     privateKey.key 生成：openssl req -out CSR.csr -new -newkey rsa:2048 -nodes -keyout privateKey.key
     certificate.crt 生成：openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout privateKey.key -out certificate.crt
     '''
-    # ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    # ssl_ctx.load_cert_chain(os.path.join("./", "certificate.crt"),
-    #                    os.path.join("./", "privateKey.key"))
-    # httpServer = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
-    # httpServer.listen(Constant.options.port, Constant.options.host)
+    rootdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    logging.info("rootdir:%s" % rootdir)
+    try:
+        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+#ssl_ctx.load_cert_chain(os.path.join(rootdir + '/', "certificate.crt"),
+#                      os.path.join(rootdir + '/', "privateKey.key"))
+
+        ssl_ctx.load_cert_chain(rootdir + "/certificate.crt", rootdir + "/privateKey.key")
+        httpServer = tornado.httpserver.HTTPServer(app, ssl_options=ssl_ctx)
+        httpServer.listen(websocket_port, "0.0.0.0")
+    except Exception as e:
+        logging.error(e.args)
+        logging.error("ImageHandler Error!, SSL error")
+        return
 
     TheQueue.init()
     dicts = TheQueue.get()
     
     imageHandler = ImageHandler.ImageHandler([dicts,])
     imageHandler.run()
+    if imageHandler.isRunOK() == False:
+        logging.error("ImageHandler Error!, Now Project exit")
+        print("ImageHandler Error!, Now Project exit")
+        return
 
     tornado.ioloop.IOLoop.instance().start()
     logging("main ioloop start down")

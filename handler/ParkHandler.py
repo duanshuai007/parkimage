@@ -158,7 +158,7 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         self.objPer.stop()
-        self.pingObj,stop()
+        self.pingObj.stop()
         logging.info("park on_close(), A client disconnected")
 
     def on_message(self, message):
@@ -178,11 +178,12 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
                 self.loopRdReqQueue.start()
 
     def on_pong(self, data):
-        logging.info("park on_pong(), keep_alive,{}" + str(self.count))
+        #logging.info("park on_pong(), keep_alive,{%d}" % self.count)
         self.count = 0
 
     def on_ping(self, data):
-        logging.info("park on_ping(), data:" + str(data))
+        #logging.info("park on_ping(), data:" + str(data))
+        pass
 
     '''
     处理登陆信息
@@ -198,21 +199,25 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
         
         if self.msg_login_request.keys() ^ info.keys():
             self.write_message(self.generateLoginResp("key error"))
+            logging.error("websocket login request:key error")
             self.close()
             return
 
         if self.msg_login_request[LOGIN_KEY_CONTENT].keys() ^ info[LOGIN_KEY_CONTENT].keys():
             self.write_message(self.generateLoginResp("child key error"))
+            logging.error("websocket login request:child key error")
             self.close()
             return
 
         if info[LOGIN_KEY_TYPE] != LOGIN_KEY_REQ_TYPE:
             self.write_message(self.generateLoginResp("key:type error"))
+            logging.error("websocket login request:key:type error")
             self.close()
             return
 
         if info[LOGIN_KEY_CONTENT][LOGIN_CHILD_KEY_CATEGORY] != LOGIN_CHILD_KEY_CATEGORY_VALUE:
             self.write_message(self.generateLoginResp("key:category error"))
+            logging.error("websocket login request:key:category error")
             self.close()
             return
 
@@ -220,15 +225,17 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
         result = TokenDef.certify_token(KEY, token)
         if result == False:
             self.write_message(self.generateLoginResp("token error"))
+            logging.error("websocker login request:token error")
             self.close()
+            return
 
         try:
             self.objPer.stop()
             self.isRegister = True
             self.write_message(self.generateLoginResp("success"))
-            logging.info("connect OK")
+            logging.info("websockt login request:connect OK")
         except Exception as e:
-            logging.info(e.args)
+            logging.warn(e.args)
         
 
     '''
@@ -237,6 +244,7 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
     def RegisterEvent(self):
         self.objPer.stop()
         if self.isRegister == False:
+            logging.info("websocket login request:timeout")
             self.close()
 
     def pingMessage(self):
@@ -287,11 +295,13 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
             ret = self.msg_recogn_request.keys() ^ info.keys()
             if ret:
                 self.write_message(self.genarateRespMsg(info, "key error", "", ""))
+                logging.error("websocket recogn request:key error")
                 return
         
             ret = self.msg_recogn_request[KEY_IMAGE].keys() ^ info[KEY_IMAGE].keys()
             if ret:
                 self.write_message(self.genarateRespMsg(info, "child key error", "", ""))
+                logging.error("websocket recogn request:child key error")
                 return
             '''
             检查是否有空的值
@@ -299,22 +309,25 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
             for key in info.keys():
                 if not info[key]:
                     self.write_message(self.genarateRespMsg(info, "%s is null" % key, "", ""))
+                    logging.error("websocket recogn request:%s is null" % key)
                     return
 
             for key in info[KEY_IMAGE].keys():
                 if not info[KEY_IMAGE][key]:
                     self.write_message(self.genarateRespMsg(info, "%s is null" % key, "", ""))
+                    logging.error("websocket recogn request:%s is null" % key)
                     return
             '''
             检查关键key值是否正确
             '''
             if info[KEY_TYPE] != RECOGN_REQ:
                 self.write_message(self.genarateRespMsg(info, "type error", "", ""))
+                logging.error("websocket recogn request:type error")
                 return
             
             self.doImageHandler(info)
         except Exception as e:
-            logging.info(e.args)
+            logging.warn(e.args)
 
     
     '''
@@ -402,11 +415,11 @@ class ParkHandler(tornado.websocket.WebSocketHandler):
                 color = msg["recogn"]["color"] 
                 plate = msg["recogn"]["plate"]
 
-            logging.info("recv Recognition Message, ImageName: %s" % name)
+            logging.info("recv Recogn Message, ImageName: %s" % name)
             mresp = self.genarateRecognRespMsg(name, status, color, plate)
 
             try:
-                logging.info("send recogn message: status = %s, color=%s, plate=%s!" % (status, color, plate))
+                logging.info("send Recogn Message: Status = %s, Color=%s, Plate=%s!" % (status, color, plate))
                 self.write_message(mresp)
             except Exception as e:
                 logging.warn("client connect error")
