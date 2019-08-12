@@ -23,51 +23,19 @@ import ImageHandler
 import TheQueue 
 import Config
 
-class MyTest(tornado.websocket.WebSocketHandler):
-
-    def check_origin(self, origin):
-        return True
-
-    def open(self):
-        print("open!")
-
-    def on_close(self):
-        print("close!")
-    
-    def on_message(self, message):
-        print("message:" + message)
-    
-    def on_pong(self, data):
-        print("pong")
-
-    def on_ping(self, data):
-        print("ping")
-
-    def keep_alive(self):
-        print("keep alive")
-
-    def get_token(self):
-        print("get token")
-
-
 class SerApplication(tornado.web.Application):
     def __init__(self):
-        handlers = [(r"/park", ParkHandler), (r"/test", MyTest) ]
+        handlers = [(r"/park", ParkHandler), ]
         settings = dict(debug=True, websocket_ping_interval=30)
         Application.__init__(self, handlers, **settings)
 
-
 def main():
-    websocket_port = 0
-    logfile = ''
-#path = os.path.dirname(os.path.abspath(sys.argv[0]))
-
     logfile = Config.getConfigEnv("LOGFILE")
     websocket_port = Config.getConfigEnv("WEBSOCKET_PORT")
 
     if not logfile:
-        logging.error("LogFile not define, please add to config.ini")
-    print("logfile name:%s" % logfile)
+        logging.error("LogFile[%s] not define, please add to config.ini" % logfile)
+
     logging.basicConfig(filename=logfile, level=logging.DEBUG,format='%(asctime)s %(levelname)s:%(filename)s[line:%(lineno)d]: %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
     tornado.options.parse_command_line()
     app = SerApplication()

@@ -18,8 +18,13 @@ class CtrlImage:
         self.saveImageDir = Config.getConfigEnv("SAVE_IMAGE_DIR")
         pass
     #保存功能
+    #name format: city-park-server-camerano-time.jpeg
     def save(self, name, data):
         dirlist = name.split('-')
+        if len(dirlist) < 5:
+            logging.info("image name format error, name:%s" % name)
+            return
+
         tmp = "%s/%s/%s/%s" % (dirlist[0], dirlist[1], dirlist[2], dirlist[3])
         self.path = self.saveImageDir + '/' + tmp
         logging.info("save:path=%s name=%s" % (self.path, name))

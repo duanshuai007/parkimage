@@ -27,7 +27,7 @@
 
 ## 使用方法
 
-> 在config.ini文件中配置各个参数，一般保持默认即可  
+> 在config.ini文件中配置各个参数，除了相机地址和端口需要配置以外，一般保持默认即可
 > 修改addTaskToCron.sh中的PASSWORD的值，与用户的sudo密码一致，然后执行./addTaskToCron.sh  
 > 脚本watch.sh start启动程序,watch.sh stop停止程序,watch.sh restart重新启动程序.  
 > 在shell界面执行crontab -e，进入编辑页面，新开一行输入`*/1 * * * * export DISPLAY=:0 && /bin/sh /home/duan/backserver/crontab_watch.sh`,该指令功能是每隔一分钟执行crontab_watch.sh脚本.  

@@ -10,18 +10,15 @@ import sys
 import logging
 import threading
 import random
+import ssl
 
 class Client:
     '''图片识别请求格式'''
     msg_recogn_request = {
         "type":"",
         "image":{
-            "city":"",
-            "park":"",
-            "server":0,
             "camerano":0,
-            "time":"",
-            "random":0,
+            "identify":"",
             "md5":"",
             "content":""
         }
@@ -30,12 +27,8 @@ class Client:
     msg_recogn_resp = {
     	"type":"recogn resp",
         "image":{
-            "city":"shenayng",
-            "park":"wanda",
-            "server":0,
             "carmerno":3,
-            "time":"2019-06-28 09:24:33",
-            "random":323232,
+            "identify":"",
             "result":{
                 "status":"success",
                 "color":"xxx",
@@ -48,7 +41,10 @@ class Client:
         "type": "request",
         "content": {
             "category": "login",
-            "token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ="
+            "token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ=",
+            "city" : "shenyang",
+            "park" : "hcwanxin",
+            "server" : "98"
         }
     }
     '''登陆请求应答格式'''
@@ -61,7 +57,7 @@ class Client:
     }
     
 #path = "/home/duan/Pictures"
-    ws = ''
+    wss = ''
 
     def __init__(self, path):
         self.path = path
@@ -70,16 +66,16 @@ class Client:
 
     def login(self):
         logging.info("login")
-        self.ws = websocket.WebSocket()
+        self.wss = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
         '''客户端首先需要登陆到服务器上'''        
         jsonmsg = json.dumps(self.msg_login)
         print(jsonmsg)
-        self.ws.connect("ws://192.168.200.212:4000/park")
-        self.ws.send(jsonmsg)
+        self.wss.connect("wss://192.168.200.199:4000/park")
+        self.wss.send(jsonmsg)
         '''
         验证登陆是否成功
         '''
-        recv = self.ws.recv()
+        recv = self.wss.recv()
         print("recv login response:%s" % recv)
         info  = json.loads(recv)
         if info["content"]["status"] != "success":
@@ -100,7 +96,7 @@ class Client:
 
     def recvRecognThread(self):
         while True:
-            recv = self.ws.recv()
+            recv = self.wss.recv()
             if recv:
                 info = json.loads(recv)
                 logging.info(info)
@@ -108,7 +104,7 @@ class Client:
 #logging.info(info)
                 if info["type"] == "recogn resp" and info["image"]["result"]["status"] == "success":
                     print("wait for result") 
-                    recv = self.ws.recv()
+                    recv = self.wss.recv()
                     data = json.loads(recv)
                     logging.info(data)
                 elif info["type"] == "recogn resp" and info["image"]["result"]["status"] == "ready":
@@ -133,18 +129,17 @@ class Client:
                 md5str = md5.hexdigest()
                 '''字典元素赋值 '''
                 self.msg_recogn_request["type"] = "recogn req"
-                self.msg_recogn_request["image"]["city"] = "sy"
-                self.msg_recogn_request["image"]["park"] = "wanda"
-                self.msg_recogn_request["image"]["server"] = 1
+#self.msg_recogn_request["image"]["city"] = "sy"
+#               self.msg_recogn_request["image"]["park"] = "wanda"
+#               self.msg_recogn_request["image"]["server"] = 1
                 self.msg_recogn_request["image"]["camerano"] = 9
-                self.msg_recogn_request["image"]["random"] = random.randint(1000, 9999) 
+                self.msg_recogn_request["image"]["identify"] = str(int(time.time() * 1000))
                 self.msg_recogn_request["image"]["md5"] = md5str
-                self.msg_recogn_request["image"]["time"] = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime())
                 self.msg_recogn_request["image"]["content"] = base64.b64encode(mbinary).decode('utf-8')
                 '''字典转换为json'''
                 jsonmsg = json.dumps(self.msg_recogn_request)
                 '''发送websocket请求数据'''
-                self.ws.send(jsonmsg)
+                self.wss.send(jsonmsg)
 #logging.info("send : %s" % jsonmsg)
                 '''等待接收数据'''
 #                recvmsg = self.ws.recv()
@@ -161,10 +156,21 @@ class Client:
 #                        logging.info("upload image error")
 
             pass
+    def renameAllPicture(self):
+        filelist = os.listdir(self.path)
+        num = 0
+        for val in filelist:
+            slist = val.split('.')
+            imagetype = slist[len(slist) - 1]
+            oldname = "{}/{}".format(self.path, val)
+            newname = "{}/{}{}.{}".format(self.path, "pic", num, imagetype)
+            os.rename(oldname, newname)
+            num = num + 1
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,format='%(asctime)s %(filename)s[line:%(lineno)d] %(message)s',datefmt='%Y-%m-%d')
     logging.info("main")
     client = Client("/home/duan/Pictures")
     if client.login() == True:
+        client.renameAllPicture()
         client.run()

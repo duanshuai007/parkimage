@@ -4,7 +4,10 @@ a.登录请求
 	"type": "request",
 	"content": {
 		"category": "login",
-		"token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ="
+		"token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ=",
+        "city" : "",    # 小写英文字母
+        "park" : "",    # 小写英文字母
+        "server" : "",  # 阿拉伯数字 0-99
 	}
 }
 
@@ -13,7 +16,7 @@ b.登录响应
 	"type": "response",
 	"content": {
 		"category": "login",
-		"status": 1
+		"status": "success" #"failed"
 	}
 }
 
@@ -23,12 +26,8 @@ a.图片信息请求
 {
 	"type":"recogn req",
 	"image":{
-		"city":"shenyang",
-		"park":"wanda",
-		"server":0,
-		"camerano":3,
-		"time":"2019-06-28 09:24:33",
-		"random":9329832,
+		"identify":"32198s9a08dsa809d8sa08ds09a80ds8a908d0sa",
+        "camerano" : "",# 阿拉伯数字 0-99
 		"md5":"xxxxxxxxxx", 
 		"content":"图片的数据"
 	}
@@ -40,12 +39,8 @@ b.发送识别信息给相机节点
 {
 	"type":"recogn resp",
 	"image":{
-		"city":"shenayng",
-		"park":"wanda",
-		"server":0,
-		"carmerno":3,
-		"time":"2019-06-28 09:24:33"
-		"random":323232,
+		"identify":"32198s9a08dsa809d8sa08ds09a80ds8a908d0sa",
+        "camerano" : "",# 阿拉伯数字 0-99
 		"result":{
 			"status":"success",
 			"color":"xxx",
@@ -73,6 +68,6 @@ ImageHandler -> ParkHandler:
 
 
 dir example:	/Picture/city/park/server/carmerno/
-image name: city-park-server-carmerno-time-random.jpg
-example: sy-wanda-1-8-20190212175309-8658.jpg
+image name: city-park-server-carmerno-timestamp.jpg
+example: sy-wanda-1-8-20190212175309.jpg
 

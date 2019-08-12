@@ -20,6 +20,7 @@ static bool isWaitRecogn = false;
 static int iRetryRecogn = 0;
 static char sCameraIp[20];
 static int sCameraPort;
+static char gImageUnicode[10];
 
 void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD dwUser)
 {
@@ -87,11 +88,12 @@ static void pthread_doorlockctl_handler(void *arg)
                 printf("retry trigger\n");
                 iRetryRecogn++;
                 CLIENT_LPRC_SetTrigger(sCameraIp, sCameraPort);
-                if (iRetryRecogn > 5) {
+                if (iRetryRecogn >= 3) {
                     iRetryRecogn = 0;
                     isWaitRecogn = false;
                     memset(sendbuff, 0, sizeof(sendbuff));
-                    strncpy(sendbuff, "Recogn Failed", strlen("Recogn Failed"));
+                    sprintf(sendbuff, "{\"id\":\"%s\",\"status\":\"%s\"}", gImageUnicode, "fail");
+                    //strncpy(sendbuff, "Recogn Failed", strlen("Recogn Failed"));
                     send(fd, sendbuff, strlen(sendbuff), 0);
                 }
             }
@@ -108,7 +110,9 @@ static void pthread_doorlockctl_handler(void *arg)
                 } else if (ret == 0) {
                     continue;
                 }
-                printf("C Socket Recv:%s\r\n", recvbuff);
+                printf("C Thread Socket Recv Image Unicode:%s\r\n", recvbuff);
+                memset(gImageUnicode, 0, sizeof(gImageUnicode));
+                strncpy(gImageUnicode, recvbuff, strlen(recvbuff));
                 //sleep(1);
                 //CLIENT_LPRC_SetTrigger(sCameraIp, sCameraPort);
                 isWaitRecogn = true;
@@ -129,12 +133,13 @@ static void pthread_doorlockctl_handler(void *arg)
 int main(int argc, char **argv)
 {
     int     ret;
-    char    chPath[128];
+    //char    chPath[128];
     pthread_t pthread_doorctl_id;
 
     int server_fd;
     struct sockaddr_in server_addr;
     char recvbuff[128];
+    char sendbuff[128];
     int len;
     int port;
     char msg_keyfile_name[100];
@@ -145,23 +150,23 @@ int main(int argc, char **argv)
         printf("expamle: ./main saveimagedir   local_socket_port   camera_ip   camera_port   keyfile_path_name\n");
         return 1;
     }
-
+#if 0
     if (strlen(argv[1]) > sizeof(chPath)) {
         printf("save img path buffer is too short\n");
         printf("you should modify main.c file chPath[] more bigger\n");
         return 1;
     }
-
+#endif
     if (strlen(argv[5]) > sizeof(msg_keyfile_name)) {
         printf("save key file path buffer is too short\n");
         printf("you should modify main.c file msg_keyfile_name[] more bigger\n");
         return 1;
     }
-
+#if 0
     memset(chPath, 0, sizeof(chPath));
     strncpy(chPath, argv[1], strlen(argv[1]));
     printf("save Image Path:%s\n", chPath);
-
+#endif
     port = atoi(argv[2]);
     printf("locale socket port = %d\n", port);
 
@@ -198,7 +203,7 @@ int main(int argc, char **argv)
     // 注册链接状态的回调函数
     CLIENT_LPRC_RegCLIENTConnEvent ((CLIENT_LPRC_ConnectCallback) ConnectStatus);
     // 设置图片保存的路径（设置路径后，接口库会自动将识别结果保存到指定目录下）
-    CLIENT_LPRC_SetSavePath(chPath);
+    //CLIENT_LPRC_SetSavePath(chPath);
     //设置gpio回掉函数
     //CLIENT_LPRC_RegWTYGetGpioState((CLIENT_LPRC_GetGpioStateCallback) GPIOCallBackHandler);
 
@@ -206,9 +211,11 @@ int main(int argc, char **argv)
     ret = CLIENT_LPRC_InitSDK(sCameraPort, NULL, 0, sCameraIp, 1);
     if (ret == 1)
     {
+#if 0
         printf("%s InitSDK fail\n\tthen quit\r\n", sCameraIp);
         CLIENT_LPRC_QuitSDK();
         return -1;
+#endif
     } else {
         printf("%s InitSDK success\n", sCameraIp);
     }
@@ -228,12 +235,17 @@ int main(int argc, char **argv)
     while(1)
     {
         memset(recvbuff, 0, sizeof(recvbuff));
+        memset(sendbuff, 0, sizeof(sendbuff));
         recvMsgQueue(siMsgID, CLIENT_TYPE, recvbuff);
         printf("C Socket Send:%s\r\n", recvbuff);
-        len = send(server_fd, recvbuff, strlen(recvbuff), 0);
+        sprintf(sendbuff, "{\"id\":\"%s\", \"status\":\"success\",\"result\":\"%s\"}", 
+                gImageUnicode, recvbuff);
+
+        len = send(server_fd, sendbuff, strlen(sendbuff), 0);
         if (len == strlen(recvbuff)) {
             printf("Send OK\r\n");
         }
+        memset(gImageUnicode, 0, sizeof(gImageUnicode));
     }
 
     close(server_fd);
