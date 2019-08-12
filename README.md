@@ -32,3 +32,5 @@
 > 脚本watch.sh start启动程序,watch.sh stop停止程序,watch.sh restart重新启动程序.  
 > 在shell界面执行crontab -e，进入编辑页面，新开一行输入`*/1 * * * * export DISPLAY=:0 && /bin/sh /home/duan/backserver/crontab_watch.sh`,该指令功能是每隔一分钟执行crontab_watch.sh脚本.  
 > 想要立即执行也可以在工程目录内执行`./crontab_watch.sh`  
+
+> 2019-08-12 后的代码是运行于docker中，docker通过install_crontask.sh任务脚本来执行，可以带有一个参数相机ip，如果没有ip则使用默认的地址。
