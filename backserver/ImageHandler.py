@@ -155,6 +155,21 @@ class ImageHandler:
         return self.resp_msg
 
     def modifyImageName(self, name, color, plate):
+        '''sy-wanda-1-1-20190734312.jpg'''
+        pathlist = name.split('-')
+        rootpath = Config.getConfigEnv("SAVE_IMAGE_DIR")
+        imagepath = "{}/{}/{}/{}/{}/".format(rootpath, pathlist[0], pathlist[1], pathlist[2], pathlist[3])
+
+        namelist = name.split('.')
+        namehead = namelist[0]
+        imagetype = namelist[1]
+        if not color and not plate:
+            newname = "{}_{}_{}.{}".format(namehead, 'xxx', 'xxxxx', imagetype)
+        else:
+            newname = "{}_{}_{}.{}".format(namehead, color, plate, imagetype)
+        os.rename(imagepath + name, imagepath + newname)
+
+    def modifyImageName(self, name, color, plate):
         '''beijing-wanda-1-0-1565930712886.jpg'''
         pathlist = name.split('-')
         rootpath = Config.getConfigEnv("SAVE_IMAGE_DIR")
