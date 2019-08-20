@@ -1,0 +1,73 @@
+1.
+a.登录请求
+{
+	"type": "request",
+	"content": {
+		"category": "login",
+		"token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ=",
+        "city" : "",    # 小写英文字母
+        "park" : "",    # 小写英文字母
+        "server" : "",  # 阿拉伯数字 0-99
+	}
+}
+
+b.登录响应
+{
+	"type": "response",
+	"content": {
+		"category": "login",
+		"status": "success" #"failed"
+	}
+}
+
+4.从相机节点接收到数据,接收到该信息后准备接收图片，图片数据以二进制方式发送。大小为size对应数值
+
+a.图片信息请求
+{
+	"type":"recogn req",
+	"image":{
+		"identify":"32198s9a08dsa809d8sa08ds09a80ds8a908d0sa",
+        "camerano" : "",# 阿拉伯数字 0-99
+		"md5":"xxxxxxxxxx", 
+		"content":"图片的数据"
+	}
+}
+
+websocket 发送给图片识别线程的信息是图片的名称，根据图片名能够找到图片对应的文件夹位置。
+
+b.发送识别信息给相机节点
+{
+	"type":"recogn resp",
+	"image":{
+		"identify":"32198s9a08dsa809d8sa08ds09a80ds8a908d0sa",
+        "camerano" : "",# 阿拉伯数字 0-99
+		"result":{
+			"status":"success",
+			"color":"xxx",
+			"plate":"xxxx"
+		}
+	}
+}
+
+
+ImageHandler 和 ParkHandler之间的通信格式
+
+ParkHandler -> ImageHandler :
+	直接发送图片名称:
+	city_park_camerano_time.jpg
+
+ImageHandler -> ParkHandler:
+	{
+		"name":"",
+		"recogn":{
+			"status":"",
+			"color":"",
+			"plate":""
+		}
+	}
+
+
+dir example:	/Picture/city/park/server/carmerno/
+image name: city-park-server-carmerno-timestamp.jpg
+example: sy-wanda-1-8-20190212175309.jpg
+

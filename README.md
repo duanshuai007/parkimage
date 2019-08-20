@@ -1,34 +1,13 @@
 ##BACK SERVER
 
-> 该程序使用Python3.6
+* 该程序运行在docker中。  
 
-## 程序中涉及到的python库
- 
-> 安装pip3的方法  
->> sudo apt-get install python3-pip  
-
-> 以下是程序中涉及到的系统库  
->> tornado  
->> logging  
->> threading   
->> time  
->> json  
->> queue  
->> socket  
->> select  
->> os  
->> PIL的模块名为Pillow，通过pip3工具安装  
->> hashlib  
->> base64  
->> hmac  
->> websocket客户端所用的库是websocket_client  
->> tkinter模块安装方法有些特殊，需要通过sudo apt-get install python3-tk指令来进行安装
-
-
-## 使用方法
-
-> 在config.ini文件中配置各个参数，一般保持默认即可  
-> 修改addTaskToCron.sh中的PASSWORD的值，与用户的sudo密码一致，然后执行./addTaskToCron.sh  
-> 脚本watch.sh start启动程序,watch.sh stop停止程序,watch.sh restart重新启动程序.  
-> 在shell界面执行crontab -e，进入编辑页面，新开一行输入`*/1 * * * * export DISPLAY=:0 && /bin/sh /home/duan/backserver/crontab_watch.sh`,该指令功能是每隔一分钟执行crontab_watch.sh脚本.  
-> 想要立即执行也可以在工程目录内执行`./crontab_watch.sh`  
+> 执行`builddocker.sh`脚本文件就能自动生成docker镜像。  
+> 使用`docker ps` 查看运行中的容器。  
+> 使用`docker ps -a` 查看所有容器。  
+> 使用`docker image ls` 查看所有镜像。  
+> 使用`docker run -dit --name park --network=host 69993c294529 /bin/bash -c "bash /home/duan/backserver/install_crontask.sh 192.168.1.123"`来启动一个容器，容器名为park，IP地址为对应的服务器所连接的相机IP地址。  
+> 使用`docker exec -ti park bash`进入运行中的容器中。  
+> 使用`docker stop park`来停止运行中的容器  
+> 使用`docker rm park`删除停止的容器。  
+> 使用`docker image rm xxxxxx`删除对应的镜像。
