@@ -1,73 +1,123 @@
-1.
-a.登录请求
-{
-	"type": "request",
-	"content": {
-		"category": "login",
-		"token": "MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ=",
-        "city" : "",    # 小写英文字母
-        "park" : "",    # 小写英文字母
-        "server" : "",  # 阿拉伯数字 0-99
-	}
-}
+##websocket通信协议
 
-b.登录响应
-{
-	"type": "response",
-	"content": {
-		"category": "login",
-		"status": "success" #"failed"
-	}
-}
+###数据格式
 
-4.从相机节点接收到数据,接收到该信息后准备接收图片，图片数据以二进制方式发送。大小为size对应数值
+> 所有客户端与服务器通信的数据协议都是   
+> \<MessageType> + \<CompressMode> + \<Body> 所组成。
 
-a.图片信息请求
-{
-	"type":"recogn req",
-	"image":{
-		"identify":"32198s9a08dsa809d8sa08ds09a80ds8a908d0sa",
-        "camerano" : "",# 阿拉伯数字 0-99
-		"md5":"xxxxxxxxxx", 
-		"content":"图片的数据"
-	}
-}
-
-websocket 发送给图片识别线程的信息是图片的名称，根据图片名能够找到图片对应的文件夹位置。
-
-b.发送识别信息给相机节点
-{
-	"type":"recogn resp",
-	"image":{
-		"identify":"32198s9a08dsa809d8sa08ds09a80ds8a908d0sa",
-        "camerano" : "",# 阿拉伯数字 0-99
-		"result":{
-			"status":"success",
-			"color":"xxx",
-			"plate":"xxxx"
-		}
-	}
-}
+Type | Size | 说明
+:-:|:-:|:-:
+MessageType | 1 | 1: 登陆请求 <br>2: 登陆响应 <br>2: 识别请求 <br>3: 识别响应
+CompressMode | 1 | 0: 未压缩<br>1: bz2方式压缩<br>
+Body | xxx | 有效消息经过以压缩方式压缩之后的内容
 
 
-ImageHandler 和 ParkHandler之间的通信格式
+####消息载体 Body
 
-ParkHandler -> ImageHandler :
-	直接发送图片名称:
-	city_park_camerano_time.jpg
+> Body 的数据格式分为以下几种.   
+> Body 内数据的分布:按字节高位在前,低位在后.
 
-ImageHandler -> ParkHandler:
-	{
-		"name":"",
-		"recogn":{
-			"status":"",
-			"color":"",
-			"plate":""
-		}
-	}
+<table>
+	<tr> <th colspan="3"> Body </th></tr>
+	<tr> 
+		<td> 请求类型 </td> 
+		<td> 数据格式 </td> 
+		<td> 消息内容 </td> 
+	</tr>
+		
+	<tr>
+		<th rowspan="5"> 登陆请求</th>
+		<td rowspan="5"> "City + Park + Server + Token" </td>
+	</tr>
+   <tr>
+    	<td rowspan="1"> City: 8Bytes "城市编号，字符串"</td>
+	</tr>
+	
+	<tr>
+    	<td rowspan="1"> Park: 8Bytes "停车场编号，字符串"</td>
+   </tr>
+   
+   <tr>
+    	<td rowspan="1"> Server: 1Bytes "服务器编号，整数"</td>
+   </tr>
+   <tr>
+    	<td rowspan="1"> Token: 80Bytes "登陆Token，字符串"</td>
+   </tr> 
+    
+
+	<tr>
+		<th rowspan="2"> 登陆响应</th>
+		<td rowspan="2"> "Status" </td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> Status: 1Bytes "0:成功，1:失败"</td>
+	</tr>
+	
+	<tr>
+		<th rowspan="6"> 识别请求</th>
+		<td rowspan="6"> "CameraNo + Identify + MD5 + ImageLen + ImageContent" </td>
+	</tr>
+   <tr>
+    	<td rowspan="1"> CameraNo: 2Bytes "相机编号，十六进制数"</td>
+	</tr>
+	
+	<tr>
+    	<td rowspan="1"> Identify: 19Bytes "标识符，字符串"</td>
+   </tr>
+   
+   <tr>
+    	<td rowspan="1"> MD5: 32Bytes "图片MD5值，字符串"</td>
+   </tr>
+   <tr>
+    	<td rowspan="1"> ImageLen: 4Bytes "图片长度，十六进制数"</td>
+   </tr> 
+   <tr>
+    	<td rowspan="1"> ImageContent: xxxBytes "图片内容，图片十六进制数据"</td>
+   </tr> 
+   
+   
+   <tr>
+		<th rowspan="7"> 识别响应</th>
+		<td rowspan="7"> "CameraNo + Identify + RecognMessage" <br>1.如果识别成功,RecognMessage = Status + Color + Plate<br>2.如果识别失败, RecognMessage = Status + errCode<br>3.由于其他原因导致的未能识别 RecognMessage = Status</td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> CameraNo: 2Bytes "相机编号,十六进制数" </td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> Identify: 19Bytes "标识符,字符串"</td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> Status: 1Bytes <br>0:"success"<br>1:"failed"<br>2:"ready"<br>3."refuse"<br>4."goon"<br>5."stop"</td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> Color: 8Bytes "车牌颜色信息,字符串"</td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> Plate: 16Bytes "车牌号码信息,字符串"</td>
+	</tr>
+	<tr>
+    	<td rowspan="1"> errCode: 1Bytes 十进制数<br>0:"识别失败"<br>1:"识别超时"<br>2:"生成图片名字出错"<br>3:"保存图片出错"<br>4:"显示图片出错"<br>5:"图片识别线程出错"<br>6:"客户端发送的识别信息格式有错误"<br>7:"图片的md5值与接收到的md5值不同"<br>8:"客户端未登陆"</td>
+	</tr>
+	
+</table>
 
 
-dir example:	/Picture/city/park/server/carmerno/
-image name: city-park-server-carmerno-timestamp.jpg
-example: sy-wanda-1-8-20190212175309.jpg
+##怎么生成客户端请求数据
+
+> 在Python3中，可以使用struct模块来进行数据生成的工作。  
+> 根据数据的格式可以使用一下的格式字符串进行数据生成
+>> 登陆请求格式化字符串 : "=BB8s8sB80s"  
+>> 对应的数据为 MessageType(B) CompressMode(B) City(8s) Park(8s) ServerNo(B) Token(80s) 其中=号表示数据不自动对齐，只占用自己所用的字节长度。  
+>> 识别请求格式化字符串分两步进行构造，首先需要生成Body部分的压缩数据
+>>> Body格式化字符串 : "=H19s32sI(xxxx)s"  (xxxx)表示的是实际的图片的大小,经过格式化字符串生成的数据还需要经过bz2进行压缩  
+>>> 请求字符串 "=BB(yyyy)s" (yyyy)表示经过上一步压缩之后所生成的数据长度，通过len命令获取它的长度。   
+
+>> 识别响应根据成功与否一共分成三种:  
+>>> 1.识别成功 格式化字符串 : "=BBH19sB8s16s"  
+>>> 2.识别失败 格式化字符串 : "=BBH19sBB"  
+>>> 3.其他信息 格式化字符串 : "=BBH19sB"  
+
+> struct.pack(fmt, xxx) 生成格式化字节串   
+> struct.unpack(fmt, xxx) 解析字节串，返回值是列表形式的值，可以直接过去列表内元素。
+
 

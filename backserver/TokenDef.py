@@ -1,7 +1,6 @@
 import time
 import base64
 import hmac
-import logging
 
 KEY = "WM_GROUND_LOCK"
 '''

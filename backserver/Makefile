@@ -6,10 +6,10 @@ ROOT_DIR :=  $(shell pwd)
 C_FLAGS	:= -g -Wall
 INCDIRS	:= include
 LIB		:= lib/libwty.a
-LD_FLAG	:= -lpthread
-OBJS	:= source/utf8.o source/msgqueue.o
+LD_FLAG	:= -lpthread -lm
+OBJS	:= source/utf8.o source/msgqueue.o source/cJSON.o
 
-NO_MAKE_DIR := include Picture lib handler __pycache__ packet image_rsync
+NO_MAKE_DIR := include Picture lib handler __pycache__ packet image_rsync Log
 NO_MAKE     := $(patsubst %, grep -v % |, $(NO_MAKE_DIR))
 SUBDIRS     = $(shell ls -l | grep ^d | awk '{print $$9}' | $(NO_MAKE) tr "\n" " ")
 X_INCDIR    := $(patsubst %, -I $(ROOT_DIR)/%, $(INCDIRS))

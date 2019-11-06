@@ -1,4 +1,4 @@
-OBJS    := utf8.o msgqueue.o
+OBJS    := utf8.o msgqueue.o cJSON.o
 CURDIR  := $(ROOT_DIR)/source
 
 all: $(OBJS)

@@ -11,7 +11,7 @@ ImageSavePath=$(cat ${root_dir}/config.ini | grep -w "SAVE_IMAGE_DIR" | awk -F":
 
 #root_dir="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 #echo "root_dir=${root_dir}" >> ${root_dir}/debug.log
-dirlist=$(${FIND} ${root_dir}/${ImageSavePath} -name *.jpg | grep -E ".*[a-zA-Z]+-[a-zA-Z]+-[0-9]+-[0-9]+-[0-9]{13}_.+_.+\.jpg$")
+dirlist=$(${FIND} ${root_dir}/${ImageSavePath} -name *.jpg | grep -E ".+-.+-[0-9]+-[0-9]+-[0-9]{13}_.+_.+\.jpg$")
 #echo "dirlist=${dirlist}" >> ${root_dir}/debug.log
 
 if [ ! -d "${root_dir}/${UPLOAD_PATH}" ]

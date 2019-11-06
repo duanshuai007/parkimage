@@ -5,11 +5,22 @@ tmp_time=$2
 
 #tmp_time=`date +"%Y-%m-%d %H:%M:%S"`
 
-nas_username="duanshuai"
-nas_password="19870209"
-nas_addr="192.168.200.239"
-nas_port="5000"
-nas_userdir="/var/services/homes/duanshuai"
+line=`cat ${root_dir}/config.ini | grep NAS_USERNAME`
+nas_username=`echo ${line#*:}`
+line=`cat ${root_dir}/config.ini | grep NAS_PASSWORD`
+nas_password=`echo ${line#*:}`
+line=`cat ${root_dir}/config.ini | grep NAS_ADDRESS`
+nas_addr=`echo ${line#*:}`
+line=`cat ${root_dir}/config.ini | grep NAS_PORT`
+nas_port=`echo ${line#*:}`
+line=`cat ${root_dir}/config.ini | grep NAS_USERDIR`
+nas_userdir=`echo ${line#*:}`
+
+#nas_username="duanshuai"
+#nas_password="19870209"
+#nas_addr="192.168.200.239"
+#nas_port="5000"
+#nas_userdir="/var/services/homes/duanshuai"
 
 BASH=`which bash`
 EXPECT=`which expect`

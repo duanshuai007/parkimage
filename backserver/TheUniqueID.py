@@ -9,25 +9,24 @@ import random
 产生错误
 '''
 def init():
-    global _global_unique_id_list
-    _global_unique_id_list = []
+    global __global_unique_id_list
+    __global_unique_id_list = []
 
 def getUniqueID():
     while True:
-        bIsExist = False
-        uniqueid = "%s%s" % ("pid", random.randint(1000, 9999))
-        for mid in _global_unique_id_list:
-            if mid == uniqueid:
-                bIsExist = True
-                break
-        if bIsExist == False:
+        uniqueid = "{}{}".format("pid", random.randint(1000, 9999))
+        if uniqueid in __global_unique_id_list:
+            continue
+        else:
+            __global_unique_id_list.append(uniqueid)
             break
-    _global_unique_id_list.append(uniqueid)
-    print(_global_unique_id_list)
+    print(__global_unique_id_list)
     return uniqueid
 
 if __name__ == '__main__':
     init()
+    print(getUniqueID())
+    print(getUniqueID())
     print(getUniqueID())
     print(getUniqueID())
     print(getUniqueID())
