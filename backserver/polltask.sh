@@ -1,7 +1,6 @@
 #!/bin/bash
 
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-tmp_time=`date +"%Y-%m-%d %H:%M:%S"`
 
 BASH=`which bash`
 
@@ -9,6 +8,7 @@ export DISPLAY=:0
 
 while true
 do
+    tmp_time=`date +"%Y-%m-%d %H:%M:%S"`
     #图片同步上传到nas服务器端
     ${BASH} ${root_dir}/rsync_script.sh "${root_dir}" "${tmp_time}"
 

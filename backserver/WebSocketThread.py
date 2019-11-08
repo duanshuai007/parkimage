@@ -125,7 +125,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     MsgHeadStruct = "BB"
     LoginReqStruct = "8s8sB80s"
     LoginRespStruct = "B" 
-    RecognReqStruct = "H19s32sI"
+    RecognReqStruct = "19s32sI"
     RecognRespString = "H19sB"
     RecognRespSuccessFmt = "8s16s"
     RecognRespFailedFmt = "B"
@@ -349,19 +349,24 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     def __ClientRecognRequest(self, info):
         self.__log.info("WebSocketMessage --> Recv Client Data")
         #获取图片数据长度
-        size = len(info) - 57
+        #第一个字节表示相机编号长度
+        cameraNoLen = info[0]
+        realdata = info[1:]
+        #1->图片名长度值的说明数字 cameraNoLen->图片名长度具体值
+        #19->identify 长度 32->md5长度
+        #4->图片长度值的说明数字
+        imgsize = len(info) - 1 - cameraNoLen - 19 - 32 - 4;
         #self.__log.info("image size = %d" % size)
-        fmt = "{}{}{}s".format(self.MsgSizeAlign, self.RecognReqStruct, size)
+        fmt = "{}{}s{}{}s".format(self.MsgSizeAlign, cameraNoLen, self.RecognReqStruct, imgsize)
         #self.__log.info("unpack fmt:%s" % fmt)
-        dat = self.__do_unpackdata(fmt, info)
+        dat = self.__do_unpackdata(fmt, realdata)
         if dat:
             if len(dat) == 5:
                 camerano = dat[0]
                 bIdentify = dat[1]
                 md5str = str(dat[2], encoding="utf-8")
-                #imagelen = dat[3]
                 imagecontent = dat[4]
-                #self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imagelen:{imagelen}')
+                self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imgsize:{imgsize}')
                 if self.__isRegister == True:
                     sendMsgList = [self.server_ioloop, self, camerano, bIdentify, self.__CameraIP, self.__serverInfo, md5str, imagecontent]
                     self.ImageReconQueue.put(sendMsgList)
@@ -372,8 +377,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
                 return
         #如果出错则会走到这里
         #解析数据出现错误，说明数据格式有问题，返回错误信息
-        err_camerano = info[0:1]
-        err_bIdentify = info[2:21]
+        err_camerano = info[1:cameraNoLen]
+        err_bIdentify = info[cameraNoLen + 1:cameraNoLen + 1 + 19]
         mresp6 = self.__genarateRecognRespMsg(err_camerano, err_bIdentify, "failed:format", 0, 0)
         if mresp6:
             self.__write_bytes(mresp6)
@@ -385,21 +390,21 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     def __genarateRecognRespMsg(self, bytecamerano, byteidentify, strstatus, bytecolor, byteplate):
         try:
             if strstatus == "success":
-                fmt = "{}{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.RecognRespString, self.RecognRespSuccessFmt)
+                fmt = "{}{}B{}s{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, len(bytecamerano), self.RecognRespString, self.RecognRespSuccessFmt)
                 bytestatus = self.__status_dict[strstatus] 
-                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, bytecamerano, byteidentify, bytestatus, bytecolor, byteplate)
+                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, len(bytecamerano), bytecamerano, byteidentify, bytestatus, bytecolor, byteplate)
                 return buf
             elif strstatus.startswith("failed:"):
                 stalist = strstatus.split(':')
                 errcode = self.__errcode_dict[stalist[1]]
-                fmt = "{}{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.RecognRespString, self.RecognRespFailedFmt)
+                fmt = "{}{}B{}s{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, len(bytecamerano), self.RecognRespString, self.RecognRespFailedFmt)
                 bytestatus = self.__status_dict["failed"]
-                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, bytecamerano, byteidentify, bytestatus, errcode)
+                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, len(bytecamerano), bytecamerano, byteidentify, bytestatus, errcode)
                 return buf
             elif strstatus in self.__status_dict.keys():
-                fmt = "{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.RecognRespString)
+                fmt = "{}{}B{}s{}".format(self.MsgSizeAlign, self.MsgHeadStruct, len(bytecamerano), self.RecognRespString)
                 bytestatus = self.__status_dict[strstatus] 
-                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, bytecamerano, byteidentify, bytestatus)
+                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, len(bytecamerano), bytecamerano, byteidentify, bytestatus)
                 return buf
             else:
                 self.__log.info(f'__genarateRecognRespMsg: status error:{strstatus}')

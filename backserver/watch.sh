@@ -4,13 +4,13 @@ SERVER_NAME="park_imagerecogn_server.py"
 SERVER_MAIN_NAME="park_imagerecogn_c"
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 PYTHON=`which python3`
-
+LOGFILE=`cat config.ini | grep LOGFILE | awk -F"=" '{print $2}'`
 stop() {
 
     pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ -n "${pid}" ]
     then
-        echo "${SERVER_NAME} pid: ${pid} kill" >> ${root_dir}/server.log
+        echo "${SERVER_NAME} pid: ${pid} kill" >> ${root_dir}/${LOGFILE}
         kill -9 ${pid}
     else
         echo "${SERVER_NAME} already stop"
@@ -19,7 +19,7 @@ stop() {
     pid=`ps -ef | grep -w ${SERVER_MAIN_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ -n "${pid}" ]
     then
-        echo "${SERVER_MAIN_NAME} pid:${pid} kill" >> ${root_dir}/server.log
+        echo "${SERVER_MAIN_NAME} pid:${pid} kill" >> ${root_dir}/${LOGFILE}
         kill -9 ${pid}
     else
         echo "${SERVER_MAIN_NAME} already stop"
@@ -45,7 +45,7 @@ start() {
         pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
         if [ ! -n "${pid}" ]
         then
-            echo "${SERVER_NAME} start failed" >> ${root_dir}/server.log
+            echo "${SERVER_NAME} start failed" >> ${root_dir}/${LOGFILE}
             exit
         fi
     else

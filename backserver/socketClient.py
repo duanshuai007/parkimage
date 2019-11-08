@@ -113,6 +113,7 @@ class ImageShow():
         "webSocketHandler" : None,
         "threadLock" : None,
         "waitTimeCount" : 0,
+        "timeStamp": "",
     }
 
     __status_dict = {
@@ -153,14 +154,15 @@ class ImageShow():
     Status  1Byte       0:失败 1:成功
 
     3.识别请求
-    CameraNo        1Byte       相机编号，十六进制
+    CameraNoLen     1Byte       相机编号字符串长度
+    CameraNo        xxxString   相机编号字符串
     Identify        19String    标识符字符串
     MD5             32String    md5字符串
     ImageLen        1Int(长度为4Byte)   图片的大小
     ImageContent    xxxString   图片数据信息
 
     4.识别响应
-    CameraNo        1Byte
+    #CameraNo        1Byte
     Identify        19String
     Status          1Byte
     Color           8String
@@ -179,7 +181,8 @@ class ImageShow():
     LoginReqStruct = "8s8sB80s"
     LoginRespStruct = "B"
     RecognReqStruct = "H19s32sI"
-    RecognRespString = "H19sB"
+    #RecognRespString = "H19sB"
+    RecognRespString = "19sB"
     RecognRespSuccessFmt = "8s16s"
     RecognRespFailedFmt = "B"
 
@@ -396,8 +399,8 @@ class ImageShow():
         
         WebSocketIOLoop = recognMsg[0]
         WebSocketHandler = recognMsg[1]
-        camerano = recognMsg[2]
-        identify_bytes = recognMsg[3]
+        camerano = str(recognMsg[2], encoding="utf-8")
+        identify = str(recognMsg[3], encoding="utf-8")
         cameraip = recognMsg[4]
         serverinfo = recognMsg[5]
         md5_str  = recognMsg[6]
@@ -411,22 +414,23 @@ class ImageShow():
             cameraDict["park"] = serverinfo["park"]
             cameraDict["server"] = serverinfo["server"]
             cameraDict["camerano"] = camerano
-            cameraDict["identify"] = identify_bytes
+            cameraDict["identify"] = identify
+            cameraDict["timeStamp"] = time.strftime("%Y%m%d%H%M%S", time.localtime())
 
             if self.__ImageHandler.checkMd5(imagecontent, md5_str) == False:
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Md5 error')
-                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "failed:md5", '', '')
+                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:md5", '', '')
                 return False
 
             name = self.__genarateImageSaveName(cameraDict)
-            if not name:
+            if name is None: 
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Genarate Name Failed!')
-                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "failed:name", '', '')
+                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:name", '', '')
                 return False
 
             if self.__ImageHandler.save(name, imagecontent) == False:
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Save Image Failed!')
-                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "failed:save", '', '')
+                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:save", '', '')
                 return False
 
             cameraDict["waitTimeCount"] = int(time.time() * 1000) + 5000
@@ -447,15 +451,15 @@ class ImageShow():
                 if self.__mode == "PREEMPTION":
                     tmp = self.__getIdleCamera()
                     if not tmp:
-                        self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "stop", '', '')
+                        self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "stop", '', '')
                     else:
-                        self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "goon", '', '')
+                        self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "goon", '', '')
                 elif self.__mode == "MATCH":
-                    self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "ready", '', '')
+                    self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "ready", '', '')
         except Exception as e:
             self.__DelayCameraDictList.append(recognMsg)
             self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> __ClientProcessData error occurs:{e.args}')
-            self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify_bytes, "failed:recogn pthread", '', '')
+            self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:recogn pthread", '', '')
         pass
 
 
@@ -588,12 +592,13 @@ class ImageShow():
                                         self.__connecttions[fileno].send(bytes(item, encoding="utf-8"))
                                     elif jsonmsg["type"] == "response":
                                         ip = jsonmsg["info"]["cameraip"]
-                                        self.__log.info(f'Camera:[{ip}] ==> socketClient Send RecognMessage to Client: {item}')
+                                        self.__log.info(f'Camera:[{ip}] ==> socketClient Get RecognMessage From CThread: {jsonmsg}')
                                         '''根据相机ip找到对应的设备信息'''
                                         for camera in self.__cameraList:
                                             if ip == camera["cameraip"] and camera["inUse"] == True:
                                                 '''对比uniconde是否相同'''
                                                 if jsonmsg["info"]["unicode"] == camera["unicode"]:
+                                                    self.__log.info(f'Camera:[{ip}] ==> socketClient Send RecognMessage to Client: {jsonmsg}')
                                                     if jsonmsg["info"]["result"]["status"] == "fail":
                                                         #modify picture name to xxx_xxxx
                                                         self.__modifyImageName(camera, '', '')
@@ -665,49 +670,58 @@ class ImageShow():
             name = self.__genarateImageSaveName(cameraDict)
 
             imagetype = 'jpg'
-            strIdentify = str(cameraDict["identify"], encoding="utf-8")
-            strIdentify = strIdentify[0:13]
+            #strIdentify = str(cameraDict["identify"], encoding="utf-8")
+            #strIdentify = strIdentify[0:13]
             if not color and not plate:
-                newname = "{}-{}-{}-{}-{}_{}_{}.{}".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], strIdentify, 'xxx', 'xxxxx', imagetype)
+                newname = "{}-{}-{}-{}-{}_{}_{}.{}".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], cameraDict["timeStamp"], 'xxx', 'xxxxx', imagetype)
             else:
-                newname = "{}-{}-{}-{}-{}_{}_{}.{}".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], strIdentify, color, plate, imagetype)
+                newname = "{}-{}-{}-{}-{}_{}_{}.{}".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], cameraDict["timeStamp"], color, plate, imagetype)
             #self.__log.info(f'__modifyImageName rename: oldname:{name}, newname:{newname}')
             os.rename(imagepath + name, imagepath + newname)
         except Exception as e:
             self.__log.error(f'__modifyImageName has error:{e.args}')
 
 
-    def __WebSocketSendResp(self, websocketIOLoop, websocketHandler, bCameraNo, bIdentify, strStatus, byteColor, bytePlate):
-        resp_bytes = self.__genarateRecognRespMsg(bCameraNo, bIdentify, strStatus, byteColor, bytePlate)
+    def __WebSocketSendResp(self, websocketIOLoop, websocketHandler, strCameraNo, strIdentify, strStatus, strColor, strPlate):
+        resp_bytes = self.__genarateRecognRespMsg(strCameraNo, strIdentify, strStatus, strColor, strPlate)
         if resp_bytes:
             websocketIOLoop.add_callback( WebSocketThread.send_message, websocketHandler, resp_bytes)
         pass
 
 
     '''生成发送给websocket client的响应数据'''
-    def __genarateRecognRespMsg(self, bytecamerano, byteidentify, strstatus, color, plate):
+    def __genarateRecognRespMsg(self, strCamerano, strIdentify, strStatus, strColor, strPlate):
         try:
-            if strstatus == "success":
-                fmt = "{}{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.RecognRespString, self.RecognRespSuccessFmt)
-                bytestatus = self.__status_dict[strstatus]
-                bytecolor = bytes(color, encoding="utf-8")
-                byteplate = bytes(plate, encoding="utf-8")
-                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, bytecamerano, byteidentify, bytestatus, bytecolor, byteplate)
+            bytecamerano = bytes(strCamerano, encoding="utf-8")
+            CameraNoLenght = len(bytecamerano)
+            byteidentify = bytes(strIdentify, encoding="utf-8")
+            if strStatus == "success":
+                fmt = "{}{}B{}s{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, CameraNoLenght, self.RecognRespString, self.RecognRespSuccessFmt)
+                bytestatus = self.__status_dict[strStatus]
+                bytecolor = bytes(strColor, encoding="utf-8")
+                byteplate = bytes(strPlate, encoding="utf-8")
+                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus, bytecolor, byteplate)
+                #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus, bytecolor, byteplate)
+                self.__log.info(f'send to client:{fmt} {buf}')
                 return buf
-            elif strstatus.startswith("failed:"):
-                stalist = strstatus.split(':')
+            elif strStatus.startswith("failed:"):
+                stalist = strStatus.split(':')
                 errcode = self.__errcode_dict[stalist[1]]
-                fmt = "{}{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.RecognRespString, self.RecognRespFailedFmt)
+                fmt = "{}{}B{}s{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, CameraNoLenght, self.RecognRespString, self.RecognRespFailedFmt)
                 bytestatus = self.__status_dict["failed"]
-                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, bytecamerano, byteidentify, bytestatus, errcode)
+                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus, errcode)
+                #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus, errcode)
+                self.__log.info(f'send to client:{fmt} {buf}')
                 return buf
-            elif strstatus in self.__status_dict.keys():
-                fmt = "{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.RecognRespString)
-                bytestatus = self.__status_dict[strstatus]
-                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, bytecamerano, byteidentify, bytestatus)
+            elif strStatus in self.__status_dict.keys():
+                fmt = "{}{}B{}s{}".format(self.MsgSizeAlign, self.MsgHeadStruct, CameraNoLenght, self.RecognRespString)
+                bytestatus = self.__status_dict[strStatus]
+                buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus)
+                #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus)
+                self.__log.info(f'send to client:{fmt} {buf}')
                 return buf
             else:
-                self.__log.info(f'__genarateRecognRespMsg: status error:{strstatus}')
+                self.__log.info(f'__genarateRecognRespMsg: status error:{strStatus}')
                 return ''
         except Exception as e:
             self.__log.error(f'__genarateRecognRespMsg: struct error:{e.args}')
@@ -717,8 +731,9 @@ class ImageShow():
         #timestamp = int(time.time() * 1000)
         try:
             #这里不能加入编码格式，否则再Image中调用os.path.exists 时会抛出Embedded NUL character错误
-            strIdentify = str(cameraDict["identify"], encoding="utf-8")
-            name = "{}-{}-{}-{}-{}.jpg".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], strIdentify[0:13])
+            #strIdentify = str(cameraDict["identify"], encoding="utf-8")
+            #name = "{}-{}-{}-{}-{}.jpg".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], strIdentify[0:13])
+            name = "{}-{}-{}-{}-{}.jpg".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], cameraDict["timeStamp"])
             return name
         except Exception as e:
             self.__log.error(f'__genarateImageSaveName:{e.args}')
