@@ -399,8 +399,10 @@ class ImageShow():
         
         WebSocketIOLoop = recognMsg[0]
         WebSocketHandler = recognMsg[1]
-        camerano = str(recognMsg[2], encoding="utf-8")
-        identify = str(recognMsg[3], encoding="utf-8")
+#camerano = str(recognMsg[2], encoding="utf-8")
+#       identify = str(recognMsg[3], encoding="utf-8")
+        camerano = recognMsg[2]
+        identify = recognMsg[3]
         cameraip = recognMsg[4]
         serverinfo = recognMsg[5]
         md5_str  = recognMsg[6]
@@ -457,7 +459,8 @@ class ImageShow():
                 elif self.__mode == "MATCH":
                     self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "ready", '', '')
         except Exception as e:
-            self.__DelayCameraDictList.append(recognMsg)
+            #已经是错误消息了，重复处理也不会成功，丢弃。
+            #self.__DelayCameraDictList.append(recognMsg)
             self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> __ClientProcessData error occurs:{e.args}')
             self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:recogn pthread", '', '')
         pass
@@ -477,6 +480,8 @@ class ImageShow():
                 if len(self.__DelayCameraDictList) == 0:
                     if not r.empty():
                         msg = r.get()
+                        msg[2] = str(msg[2], encoding="utf-8")
+                        msg[3] = str(msg[3], encoding="utf-8")
                         cameraip = msg[4]
                          #抢占模式使用所有可以使用的设备
                         if self.__mode == "PREEMPTION":
@@ -495,15 +500,16 @@ class ImageShow():
                     msg = self.__DelayCameraDictList.pop(0)
                     cameraip = msg[4]
                     #发现有新的消息，返回拒绝，扔掉改消息
+                    '''
                     if not r.empty():
                         tmp = r.get()
                         if cameraip == tmp[4]:
-                            self.__WebSocketSendResp(tmp[0], tmp[1], tmp[2], tmp[3], "refuse", '', '')
+                            self.__WebSocketSendResp(tmp[0], tmp[1], camerano, identify, "refuse", '', '')
                             self.__log.warn(f'Camera:[{cameraip}] ==> __ImageSendReqProcess refuse[1]!')
                         else:
                             self.__DelayCameraDictList.append(tmp)
                         del tmp
-
+                    '''
                     #如果消息中的ip与当前设备ip一致，则进行处理，否则继续放回延时列表中
                     self.__log.info(f'Camera:[{cameraip}] ==> dev ip : {cameraDict["cameraip"]}')
                     camera = self.__getMatchCamera(cameraip)
@@ -692,6 +698,7 @@ class ImageShow():
     '''生成发送给websocket client的响应数据'''
     def __genarateRecognRespMsg(self, strCamerano, strIdentify, strStatus, strColor, strPlate):
         try:
+            self.__log.info(f'socket client strCamerano={strCamerano} strIdentify={strIdentify}')
             bytecamerano = bytes(strCamerano, encoding="utf-8")
             CameraNoLenght = len(bytecamerano)
             byteidentify = bytes(strIdentify, encoding="utf-8")
@@ -716,6 +723,7 @@ class ImageShow():
             elif strStatus in self.__status_dict.keys():
                 fmt = "{}{}B{}s{}".format(self.MsgSizeAlign, self.MsgHeadStruct, CameraNoLenght, self.RecognRespString)
                 bytestatus = self.__status_dict[strStatus]
+                #self.__log.info(f'resp:fmd={fmt} bytestatus={bytestatus} bytecamerano={bytecamerano} byteidentify={byteidentify}')
                 buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus)
                 #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus)
                 self.__log.info(f'send to client:{fmt} {buf}')
@@ -724,7 +732,7 @@ class ImageShow():
                 self.__log.info(f'__genarateRecognRespMsg: status error:{strStatus}')
                 return ''
         except Exception as e:
-            self.__log.error(f'__genarateRecognRespMsg: struct error:{e.args}')
+            self.__log.error(f'socket client __genarateRecognRespMsg: struct error:{e.args}')
             return ''
 
     def __genarateImageSaveName(self, cameraDict):

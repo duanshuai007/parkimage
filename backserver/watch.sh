@@ -4,7 +4,7 @@ SERVER_NAME="park_imagerecogn_server.py"
 SERVER_MAIN_NAME="park_imagerecogn_c"
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 PYTHON=`which python3`
-LOGFILE=`cat config.ini | grep LOGFILE | awk -F"=" '{print $2}'`
+LOGFILE=`cat ${root_dir}/config.ini | grep LOGFILE | awk -F"=" '{print $2}'`
 stop() {
 
     pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
@@ -86,3 +86,5 @@ case "${cmd}" in
         echo "========================"
         ;;
 esac
+
+exit
