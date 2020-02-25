@@ -1,13 +1,14 @@
 #!/bin/bash
 
+export DISPLAY=:0
 SERVER_NAME="park_imagerecogn_server.py"
 SERVER_MAIN_NAME="park_imagerecogn_c"
 root_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 PYTHON=`which python3`
-LOGFILE=`cat ${root_dir}/config.ini | grep LOGFILE | awk -F"=" '{print $2}'`
+LOGFILE=$(awk -F"=" '{if($1=="DEBUGLOGFILE") print $2}' ${root_dir}/config.ini)
 stop() {
 
-    pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
+    pid=`ps -ef | grep -w "${SERVER_NAME}" | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ -n "${pid}" ]
     then
         echo "${SERVER_NAME} pid: ${pid} kill" >> ${root_dir}/${LOGFILE}
@@ -16,7 +17,7 @@ stop() {
         echo "${SERVER_NAME} already stop"
     fi
 
-    pid=`ps -ef | grep -w ${SERVER_MAIN_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
+    pid=`ps -ef | grep -w "${SERVER_MAIN_NAME}" | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ -n "${pid}" ]
     then
         echo "${SERVER_MAIN_NAME} pid:${pid} kill" >> ${root_dir}/${LOGFILE}
@@ -28,7 +29,7 @@ stop() {
 
 start() {
 
-    pid=`ps -ef | grep -w ${SERVER_MAIN_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
+    pid=`ps -ef | grep -w "${SERVER_MAIN_NAME}" | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ ! -n "${pid}" ]
     then
         ${PYTHON} ${root_dir}/server_main.py &
@@ -36,12 +37,12 @@ start() {
         echo "${SERVER_MAIN_NAME} already running"
     fi
 
-    pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
+    pid=`ps -ef | grep -w "${SERVER_NAME}" | grep -v vi | grep -v grep | awk '{print $2}'`
     if [ ! -n "${pid}" ]
     then
         ${PYTHON} ${root_dir}/${SERVER_NAME} &
         #因为在ImageHandler里面判断tkinter启动用了一秒延时，所以这里必须大于1秒
-        sleep 2
+        sleep 3
         pid=`ps -ef | grep -w ${SERVER_NAME} | grep -v vi | grep -v grep | awk '{print $2}'`
         if [ ! -n "${pid}" ]
         then

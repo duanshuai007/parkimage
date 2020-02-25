@@ -57,6 +57,11 @@ def main():
     TheQueue.init()
     dicts = TheQueue.get()
 
+    transferStation = ImageShow(dicts)
+    if transferStation.run() == False:
+        logger.error(f'socket Client Image Window Create Failed');
+        return
+    
     tornado.options.parse_command_line()
 
     if not logfile:
@@ -79,9 +84,6 @@ def main():
     except Exception as e:
         logger.error(f'socketClient Error!, SSL error:{e.args}')
         return
-    
-    transferStation = ImageShow(dicts)
-    transferStation.run()
 
     BlackListThread.BlackList(dicts)
 

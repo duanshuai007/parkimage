@@ -2,6 +2,6 @@
 
 tar -zcvf backserver.tar.gz backserver
 
-docker build -t mypark:v20200225 .
+docker build -t mypark:v3 .
 
 rm backserver.tar.gz

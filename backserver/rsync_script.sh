@@ -5,16 +5,11 @@ tmp_time=$2
 
 #tmp_time=`date +"%Y-%m-%d %H:%M:%S"`
 
-nas_username=`cat ${root_dir}/config.ini | grep USERNAME | awk -F"=" '{print $2}'`
-#nas_username=`echo ${line#*:}`
-nas_password=`cat ${root_dir}/config.ini | grep PASSWORD | awk -F"=" '{print $2}'`
-#nas_password=`echo ${line#*:}`
-nas_addr=`cat ${root_dir}/config.ini | grep ADDRESS | awk -F"=" '{print $2}'`
-#nas_addr=`echo ${line#*:}`
-nas_port=`cat ${root_dir}/config.ini | grep PORT | awk -F"=" '{print $2}'`
-#nas_port=`echo ${line#*:}`
-nas_userdir=`cat ${root_dir}/config.ini | grep USERDIR | awk -F"=" '{print $2}'`
-#nas_userdir=`echo ${line#*:}`
+nas_username=$(awk -F"=" '{if($1=="USERNAME") print$2}' ${root_dir}/config.ini)
+nas_password=$(awk -F"=" '{if($1=="PASSWORD") print$2}' ${root_dir}/config.ini)
+nas_addr=$(awk -F"=" '{if($1=="ADDRESS") print$2}' ${root_dir}/config.ini)
+nas_port=$(awk -F"=" '{if($1=="PORT") print$2}' ${root_dir}/config.ini)
+nas_userdir=$(awk -F"=" '{if($1=="USERDIR") print$2}' ${root_dir}/config.ini)
 
 #nas_username="duanshuai"
 #nas_password="19870209"
@@ -22,7 +17,7 @@ nas_userdir=`cat ${root_dir}/config.ini | grep USERDIR | awk -F"=" '{print $2}'`
 #nas_port="5000"
 #nas_userdir="/var/services/homes/duanshuai"
 
-DEBUG=$(cat ${root_dir}/config.ini | grep DEBUGLOGFILE | awk -F"=" '{print $2}')
+DEBUG=$(awk -F"=" '{if($1=="DEBUGLOGFILE") print $2}' ${root_dir}/config.ini)
 
 BASH=`which bash`
 EXPECT=`which expect`

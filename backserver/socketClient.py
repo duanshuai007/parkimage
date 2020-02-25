@@ -204,6 +204,8 @@ class ImageShow():
     __log = None 
     __ImageHandler = None
 
+    __windowOK = False
+
     def __init__(self, MsgQueue):
 
         self.__ImageHandler = CtrlImage()
@@ -284,6 +286,7 @@ class ImageShow():
     def __WindowShowThread(self):
         try:
             '''创建根窗口并进行隐藏'''
+            self.__windowOK = False
             root = tk.Tk()
             root.withdraw()
             '''创建子窗口'''
@@ -292,7 +295,7 @@ class ImageShow():
                 top.attributes("-fullscreen", True)
                 top.attributes("-topmost",True)
                 width = int(camera["Window"]["width"], 10)
-                height = int(camera["Window"]["width"], 10)
+                height = int(camera["Window"]["height"], 10)
                 pos = int(camera["Window"]["no"]) * width
                 size = "{}x{}+{}+{}".format(width, height, pos, 0)
                 top.geometry(size)
@@ -300,12 +303,12 @@ class ImageShow():
                 img_label.pack()
                 camera["Window"]["imageLabel"] = img_label
                 self.__log.info("SocketInit ==> Create New TopLevel:Size = %s" % size)
-            
+            self.__windowOK = True
             root.update()
             root.mainloop()
         except Exception as e:
             self.__log.error(f'SocketInit ==> __WindowShowThread error:{e.args}')
-
+            self.__windowOK = False
     '''
     每次使用前需要向服务器申请可以使用的相机数
     在申请到相机之后直接创建tkinter imagelabel
@@ -658,6 +661,10 @@ class ImageShow():
         t.setDaemon(False)
         t.start()
 
+        time.sleep(2)
+        if self.__windowOK == False:
+            return False
+
         t = threading.Thread(target = self.__ImageSendReqProcess, args = [self.rqueue,])
         t.setDaemon(False)
         t.start()
@@ -665,6 +672,7 @@ class ImageShow():
         t = threading.Thread(target = self.__socketRecvThread, args = [])
         t.setDaemon(False)
         t.start()
+        return True
         pass
     
 

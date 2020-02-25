@@ -32,6 +32,7 @@ def main():
     cmd = "{} &".format(cmd)
     log.info("******************")
     log.info(cmd)
+    print(cmd)
     log.info("******************")
     os.system(cmd)
 

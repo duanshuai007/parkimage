@@ -4,17 +4,14 @@ MV=$(which mv)
 FIND=$(which find)
 UPLOAD_PATH="image_rsync"
 
-
 root_dir=$1
 tmp_time=$2
 
-DEBUG=$(cat ${root_dir}/config.ini | grep DEBUGLOGFILE | awk -F"=" '{print $2}')
-ImageSavePath=$(cat ${root_dir}/config.ini | grep -w "SAVE_IMAGE_DIR" | awk -F":" '{print $2}')
+DEBUG=$(awk -F"=" '{if($1=="DEBUGLOGFILE") print $2}' ${root_dir}/config.ini)
+ImageSavePath=$(awk -F"=" '{if($1=="SAVE_IMAGE_DIR") print $2}' ${root_dir}/config.ini)
 
 #root_dir="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-#echo "root_dir=${root_dir}" >> ${root_dir}/${DEBUG}
 dirlist=$(${FIND} ${root_dir}/${ImageSavePath} -name *.jpg | grep -E ".+[0-9]{14}\_.+\.jpg$")
-#echo "dirlist=${dirlist}" >> ${root_dir}/${DEBUG}
 
 if [ ! -d "${root_dir}/${UPLOAD_PATH}" ]
 then

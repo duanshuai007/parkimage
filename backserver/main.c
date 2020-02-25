@@ -44,6 +44,12 @@ typedef enum {
     CAMERA_ACTION_HASRESULT,
 } CAMERA_STATUS;
 
+typedef enum {
+    UNSET,
+    CONNECT,
+    DISCONNECT,
+}CONSTATUS;
+
 typedef struct {
     pthread_mutex_t lock;
     //与客户端链接的socket描述符 
@@ -54,7 +60,6 @@ typedef struct {
     //图片对应的unicode
     char unicode[10];
 
-    volatile bool inUse;                 //相机是否已经被客户端所占用
     long waitSeconds;               //相机上等待识别结果的时间
     unsigned int retryTimes;
     volatile CAMERA_STATUS action;  //相机的执行动作 分别是空闲，触发，等待结果，获得结果
@@ -62,8 +67,10 @@ typedef struct {
     plateInfo plateInfo;
 
     volatile long heart;                     //心跳，如果客户端没有响应，连续n次则认为链接断开，关闭链接，并释放对应相机
-    volatile unsigned int heartRespDelay;    //发送心跳信息后等待客户端返回响应的时间，如果超出时间仍没接收到响应，则关闭连接。
-    volatile bool ClientIsAlive;             //客户端连接状态标志
+    //volatile unsigned int heartRespDelay;    //发送心跳信息后等待客户端返回响应的时间，如果超出时间仍没接收到响应，则关闭连接。
+    CONSTATUS mConStatus;             //客户端连接状态标志
+    bool bHeartSendFlag;
+    bool bHeartGetResp;
 } CameraInfo;
 
 typedef struct CameraList {
@@ -307,25 +314,23 @@ static cJSON * getCamera(char *numstring, int socketfd)
             continue;
         }
         
-        //if (last->Info->inUse == false) {
-            cJSON * camerainfo = cJSON_CreateObject();
-            cJSON_AddItemToObject(camerainfo, "ip", cJSON_CreateString(last->Info->IP));
-            cJSON_AddItemToObject(camerainfo, "port", cJSON_CreateNumber(last->Info->Port));
-            memset(cameraname, 0, sizeof(cameraname));
-            sprintf(cameraname, "camera%d", no);
-            cJSON_AddItemToObject(cameraInfoObj, cameraname, camerainfo);
+        cJSON * camerainfo = cJSON_CreateObject();
+        cJSON_AddItemToObject(camerainfo, "ip", cJSON_CreateString(last->Info->IP));
+        cJSON_AddItemToObject(camerainfo, "port", cJSON_CreateNumber(last->Info->Port));
+        memset(cameraname, 0, sizeof(cameraname));
+        sprintf(cameraname, "camera%d", no);
+        cJSON_AddItemToObject(cameraInfoObj, cameraname, camerainfo);
 
-            pthread_mutex_lock(&last->Info->lock);
-            last->Info->socket = socketfd;
-            last->Info->ClientIsAlive = true;
-            last->Info->heart = getCurrentTime();
-            last->Info->heartRespDelay = CLIENT_HEART_RESP_DELAY;
-            last->Info->action = CAMERA_ACTION_IDLE;
-            last->Info->inUse = true;
-            pthread_mutex_unlock(&last->Info->lock);
+        pthread_mutex_lock(&last->Info->lock);
+        last->Info->socket = socketfd;
+        last->Info->mConStatus = CONNECT;
+        last->Info->heart = getCurrentTime();
+        last->Info->bHeartSendFlag = false;
+        //last->Info->heartRespDelay = 2 * CLIENT_HEART_RESP_DELAY;
+        last->Info->action = CAMERA_ACTION_IDLE;
+        pthread_mutex_unlock(&last->Info->lock);
 
-            no++;
-        //}
+        no++;
 
         if (no == num)
             break;
@@ -357,10 +362,10 @@ static bool cameraTriggerSet(char *cameraip, char *unicode, unsigned int delayms
                 memset(last->Info->unicode, 0, sizeof(last->Info->unicode));
                 strncpy(last->Info->unicode, unicode, strlen(unicode));
 
+                //刷新心跳时间间隔
                 last->Info->heart = getCurrentTime();
-                last->Info->triggerDelay = last->Info->heart + delayms;
-                last->Info->heartRespDelay = CLIENT_HEART_RESP_DELAY;
-                last->Info->ClientIsAlive = true;
+                last->Info->bHeartSendFlag = false;
+                last->Info->triggerDelay = getCurrentTime() + delayms;
                 last->Info->action = CAMERA_ACTION_TRIGGER;
                 pthread_mutex_unlock(&last->Info->lock);
                 //printf("set action CAMERA_ACTION_TRIGGER\n");
@@ -427,18 +432,18 @@ static void setClientAlive(char *ip)
 
     CameraList *last = camera;
     while (last) {
-         if (last->Info == NULL) {
-             last = last->Next;
-             continue;
-         }
+        if (last->Info == NULL) {
+            last = last->Next;
+            continue;
+        }
 
-         if (strcmp(ip, last->Info->IP) == 0) {
-             pthread_mutex_lock(&last->Info->lock);
-             last->Info->ClientIsAlive = true;
-             pthread_mutex_unlock(&last->Info->lock);
-         }
+        if (strcmp(ip, last->Info->IP) == 0) {
+            pthread_mutex_lock(&last->Info->lock);
+            last->Info->bHeartGetResp = true;
+            pthread_mutex_unlock(&last->Info->lock);
+        }
 
-         last = last->Next;
+        last = last->Next;
     }
 }
 
@@ -465,7 +470,6 @@ static void thread_camera_trigger_handler(void * arg)
 {
     long timestamp = 0;
     int willCloseFd = 0;
-    bool isClosed = false;
     //1ms定时循环
     while (1) 
     {
@@ -475,29 +479,36 @@ static void thread_camera_trigger_handler(void * arg)
         CameraList *last = camera;
 
         //用来关闭socket描述符
-        if (willCloseFd) {
-            while (last) {
+        while (last) {
+            if (NULL == last->Info) {
+                last = last->Next;
+                continue;
+            }
+
+            if (CONNECT == last->Info->mConStatus) {
+                break;
+            } else {
+                last = last->Next;
+                continue;
+            }
+        }
+
+        if (NULL == last) {
+            //所有相机都没有收到心跳返回，关闭socket链接
+            //DEBUG("%s %d : fd[%d] client[%s] close\n", __func__, __LINE__, last->Info->socket, last->Info->IP);
+            DEBUG("All Carema not Alive\n");
+            last = camera;
+            while(last) {
                 if (last->Info == NULL) {
                     last = last->Next;
                     continue;
                 }
-
-                if (willCloseFd == last->Info->socket) {
-                    DEBUG("%s %d : fd[%d] client[%s] close\n", __func__, __LINE__, last->Info->socket, last->Info->IP);
-                    if (isClosed == false) {
-                        close(last->Info->socket);
-                        isClosed = true;
-                    }
-                    last->Info->socket = NULL;
-                    last->Info->inUse = false;
-                }
-
+                willCloseFd = last->Info->socket;
+                last->Info->socket = 0;
+                last->Info->action = CAMERA_ACTION_UNUSE;
                 last = last->Next;
-                if (last == NULL) {
-                    isClosed = false;
-                    willCloseFd = 0;
-                }
             }
+            close(willCloseFd);
         }
 
         last = camera;
@@ -509,41 +520,36 @@ static void thread_camera_trigger_handler(void * arg)
                 continue;
             }
 
-            if (last->Info->inUse == false) {
-                last = last->Next;
-                continue;
-            }
-
             pthread_mutex_lock(&last->Info->lock);
 
             switch (last->Info->action) {
                 case CAMERA_ACTION_IDLE:
                     {
-                        //printf("in CAMERA_ACTION_IDLE %s\n", last->Info->IP);
-                        if (last->Info->heartRespDelay == 0) {
-                            if (last->Info->ClientIsAlive == false) {
-                                //客户端断开，进行处理 
-                                //DEBUG("%s %d : client[%s] close\n", __func__, __LINE__, last->Info->IP);
-                                willCloseFd = last->Info->socket;
-                                //close(last->Info->socket);
-                                //last->Info->socket = NULL;
-                                //last->Info->inUse = false;
-                                last->Info->action = CAMERA_ACTION_UNUSE;
-                            } else {
-                                if (( timestamp >= last->Info->heart) && ( timestamp - last->Info->heart > CLIENT_HEART_STAMP)) {
+                        //DEBUG("in CAMERA_ACTION_IDLE %s\n", last->Info->IP);
+                        if (timestamp >= last->Info->heart) {
+                            if (timestamp - last->Info->heart > (CLIENT_HEART_STAMP * 2)) {
+                                //心跳时间已经超时
+                                if (false == last->Info->bHeartGetResp) {
+                                    DEBUG("in CAMERA_ACTION_IDLE heart timeout:%s\n", last->Info->IP);
+                                    last->Info->mConStatus = DISCONNECT;
+                                } else {
+                                    DEBUG("in CAMERA_ACTION_IDLE get heart:%s\n", last->Info->IP);
+                                }
+                                last->Info->heart = timestamp;
+                                last->Info->bHeartSendFlag = false;
+                            } else if (timestamp - last->Info->heart > CLIENT_HEART_STAMP) {
+                                //查看是否发出了心跳命令
+                                if (last->Info->bHeartSendFlag == false) {
+                                    DEBUG("in CAMERA_ACTION_IDLE send heart cmd:%s\n", last->Info->IP);
                                     char *msg = genarateHeartMsg(last);
-                                    //DEBUG("CThread Send Heart %s\n", msg);
                                     if (msg) {
                                         socket_send(last->Info->socket, msg);
                                     }
-                                    last->Info->heart = getCurrentTime();
-                                    last->Info->heartRespDelay = CLIENT_HEART_RESP_DELAY;
-                                    last->Info->ClientIsAlive = false;
+                                    last->Info->bHeartSendFlag = true;
+                                    last->Info->bHeartGetResp = false;
                                 }
                             }
-                        } else {
-                            last->Info->heartRespDelay--;
-                        }
+                        } 
                     }
                     break;
                 case CAMERA_ACTION_TRIGGER:
@@ -570,7 +576,9 @@ static void thread_camera_trigger_handler(void * arg)
                                 if (str) {
                                     socket_send(last->Info->socket, str);
                                 }
-                                last->Info->heartRespDelay = CLIENT_HEART_RESP_DELAY;
+                                //last->Info->heartRespDelay = 2 * CLIENT_HEART_RESP_DELAY;
+                                last->Info->heart = timestamp;
+                                last->Info->bHeartSendFlag = false;
                                 last->Info->action = CAMERA_ACTION_IDLE;
                             } else {
                                 DEBUG("%s retry CAMERA_ACTION_WAITRESULT\n", last->Info->unicode);
@@ -586,7 +594,9 @@ static void thread_camera_trigger_handler(void * arg)
                         if (str) {
                             socket_send(last->Info->socket, str);
                         }
-                        last->Info->heartRespDelay = CLIENT_HEART_RESP_DELAY;
+                        //last->Info->heartRespDelay = 2 * CLIENT_HEART_RESP_DELAY;
+                        last->Info->heart = timestamp;
+                        last->Info->bHeartSendFlag = false;
                         last->Info->action = CAMERA_ACTION_IDLE;
                     }
                     break;
@@ -869,16 +879,20 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    DEBUG("===> create pthread\n");
     //处理识别信息的线程
+#if 1
     pthread_t pthread_id;
     if (pthread_create(&pthread_id, NULL, (void *)&thread_camera_trigger_handler, 0) == -1) {
         perror("pthread_create");
         return -1;
     }
-
+#endif
+    DEBUG("===> enter while\n");
     while(1)
     {
         int n, i;
+#if 1
         n = epoll_wait(epoll_fd, events, MAXEVENTS, -1);
         for (i = 0; i < n; i++) {
             if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP ||
@@ -894,6 +908,7 @@ int main(int argc, char **argv)
                 process_new_data(events[i].data.fd);
             }
         }
+#endif
     }
 
     pthread_join(pthread_id, NULL);
