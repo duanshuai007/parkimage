@@ -17,7 +17,7 @@ def main():
         rrlist = item.split('-')
         camera_ip_list.append(rrlist)
     
-    logfile = c.get("CONFIG", "LOGFILE")
+    logfile = c.get("CONFIG", "CLOGFILE")
     log = LoggingHelper.LoggingProducer()
 
     if not logfile:
@@ -29,7 +29,7 @@ def main():
     cmd = "{} {}".format(cmd, cameranum)
     for val in camera_ip_list:
         cmd = cmd + ' ' + str(val[0]) + ' ' + str(camera_port)
-    cmd = "{} &".format(cmd)
+    cmd = "{} > {} 2>&1 &".format(cmd, logfile)
     log.info("******************")
     log.info(cmd)
     print(cmd)

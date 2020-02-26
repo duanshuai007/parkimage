@@ -25,6 +25,7 @@ import TokenDef
 import TheQueue
 import LoggingHelper
 import Config
+from strictly_func_check import strictly_func_check
 
 KEY = "WM_GROUND_LOCK" # MTU1MTg2NTkzNi43NTkzMzE6NTNkNDJjY2YwMmU4OWQ0Mjg4M2RjZjViNzg2ODQ4MzUxMzZkYmQyMQ==
 LOGIN_REQ = 1 
@@ -145,7 +146,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
         return True
 
-    def initialize(self, MsgQueue, cameraip):
+    @strictly_func_check
+    def initialize(self:object, MsgQueue:dict, cameraip:str)->None:
         c = Config.Config()
         logfile = c.get("CONFIG", "LOGFILE")
         self.__log = LoggingHelper.LoggingProducer()
@@ -183,9 +185,9 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
         self.__log.info(f'WebSocketInit --> self.live_web_sockets: {self.live_web_sockets}')
         pass
 
-
+#    @strictly_func_check
     @classmethod
-    def send_message(cls, clientHandler, message):
+    def send_message(cls:object, clientHandler:object, message:bytes):
         removable = set()
         for ws in cls.live_web_sockets:
             if not ws.ws_connection or not ws.ws_connection.stream.socket:
@@ -204,7 +206,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
         self.close()
         self.__log.info(f'WebSocketMessage --> Client:{self} Disconnected!')
 
-    def on_message(self, message):
+    @strictly_func_check
+    def on_message(self:object, message:bytes)->None:
         MsgType = message[0]
         CompressMode = message[1]
         CompressBody = message[2:]
@@ -233,7 +236,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     def on_ping(self, data):
         pass
 
-    def __do_unpackdata(self, rules, data):
+    @strictly_func_check
+    def __do_unpackdata(self:object, rules:str, data:bytes)->tuple:
         try:
             buf = struct.unpack(rules, data)
             return buf
@@ -241,7 +245,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
             self.__log.info(f'__do_unpackdata has error: {e.args}')
             return ''
 
-    def __generateLoginResp(self, mstatus):
+    @strictly_func_check
+    def __generateLoginResp(self:object, mstatus:int)->bytes:
         try:
             fmt = "{}{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, self.LoginRespStruct)
             buf = struct.pack(fmt, LOGIN_RESP, COMPRESS_MODE_NONE, mstatus)
@@ -251,7 +256,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
             return ''
         pass
 
-    def __loginCertification(self, msgbytes):
+    @strictly_func_check
+    def __loginCertification(self:object, msgbytes:bytes)->None:
         fmt = "{}{}".format(self.MsgSizeAlign, self.LoginReqStruct)
         msg = self.__do_unpackdata(fmt, msgbytes)
         self.__log.info(f'WebSocketMessage --> login message: {msg}')
@@ -346,7 +352,8 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     从本线程消息队列中提取等待处理的请求数据
     数据格式是 message 为 json字符串
     '''
-    def __ClientRecognRequest(self, info):
+    @strictly_func_check
+    def __ClientRecognRequest(self:object, info:bytes)->None:
         self.__log.info("WebSocketMessage --> Recv Client Data")
         #获取图片数据长度
         #第一个字节表示相机编号长度
@@ -368,10 +375,11 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
                 imagecontent = dat[4]
                 self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imgsize:{imgsize}')
                 if self.__isRegister == True:
+                    self.__log.info(f'self.server_ioloop={self.server_ioloop}, self=f{self}')
                     sendMsgList = [self.server_ioloop, self, camerano, bIdentify, self.__CameraIP, self.__serverInfo, md5str, imagecontent]
                     self.ImageReconQueue.put(sendMsgList)
                 else:
-                    mresp5 = self.__genarateRecognRespMsg(err_camerano, err_bIdentify, "failed:login", 0, 0)
+                    mresp5 = self.__genarateRecognRespMsg(camerano, bIdentify, "failed:login", 0, 0)
                     if mresp5:
                         self.__write_bytes(mresp5)
                 return
@@ -384,10 +392,12 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
             self.__write_bytes(mresp6)
         pass
 
-    def __write_bytes(self, msg):
+    @strictly_func_check
+    def __write_bytes(self:object, msg:bytes)->None:
         self.write_message(msg, True)
 
-    def __genarateRecognRespMsg(self, bytecamerano, byteidentify, strstatus, bytecolor, byteplate):
+    @strictly_func_check
+    def __genarateRecognRespMsg(self:object, bytecamerano:bytes, byteidentify:bytes, strstatus:str, bytecolor:bytes, byteplate:bytes)->str:
         try:
             if strstatus == "success":
                 fmt = "{}{}B{}s{}{}".format(self.MsgSizeAlign, self.MsgHeadStruct, len(bytecamerano), self.RecognRespString, self.RecognRespSuccessFmt)

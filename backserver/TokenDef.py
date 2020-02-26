@@ -1,12 +1,13 @@
 import time
 import base64
 import hmac
-
+from strictly_func_check import strictly_func_check
 KEY = "WM_GROUND_LOCK"
 '''
 生成token
 '''
-def generate_token(key, expire=3600):
+@strictly_func_check
+def generate_token(key:str, expire:int = 3600)->str:
     '''
         生成token
         @Args:
@@ -25,7 +26,7 @@ def generate_token(key, expire=3600):
 '''
 验证token
 '''
-def certify_token(key, token):
+def certify_token(key:str, token:bytes)->bool:
     '''
         验证token
         @Args:

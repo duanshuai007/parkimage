@@ -7,6 +7,7 @@ from PIL import Image
 import hashlib
 import Config
 import LoggingHelper
+from strictly_func_check import strictly_func_check
 
 class CtrlImage:
     
@@ -19,11 +20,11 @@ class CtrlImage:
         self.saveImageDir = c.get("CONFIG", "SAVE_IMAGE_DIR")
         logfile = c.get('CONFIG', 'LOGFILE')
         self.log = LoggingHelper.LoggingProducer()
-
         pass
     #保存功能
     #name format: city-park-server-camerano-time.jpeg
-    def save(self, name, data):
+    @strictly_func_check
+    def save(self:object, name:str, data:bytes)->bool:
         dirname = name.split('-')
         if len(dirname) < 5:
             self.log.info("ImageHandler ==> image name format error, name:%s" % name)
@@ -60,7 +61,8 @@ class CtrlImage:
     def show(self, name):
         pass
 
-    def checkMd5(self, data, md5str):
+    @strictly_func_check
+    def checkMd5(self:object, data:bytes, md5str:str)->bool:
         md5 = hashlib.md5()
         md5.update(data)
         md5hex = md5.hexdigest()
@@ -72,4 +74,4 @@ class CtrlImage:
 
 if __name__ == '__main__':
     x = CtrlImage()
-    x.save("pic.jpg", b'382912148217921382198392183921')
+    x.save("city-park-server-camerano-time.jpeg", b'382912148217921382198392183921')

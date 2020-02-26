@@ -24,6 +24,7 @@ import TheQueue
 import LoggingHelper
 from Image import CtrlImage
 from WebSocketThread import WebSocketThread
+from strictly_func_check import strictly_func_check
 
 LOGIN_REQ = 1
 LOGIN_RESP = 2
@@ -206,7 +207,8 @@ class ImageShow():
 
     __windowOK = False
 
-    def __init__(self, MsgQueue):
+    @strictly_func_check
+    def __init__(self:object, MsgQueue:dict)->None:
 
         self.__ImageHandler = CtrlImage()
         '''用来接收websocket线程发送过来的图片识别的请求信息'''
@@ -226,7 +228,8 @@ class ImageShow():
         self.__log.info(f'SocketInit ==> Camera Thread Socket Port:{self.__socket_port}')
         pass
 
-    def __connect_to_server(self):
+    @strictly_func_check
+    def __connect_to_server(self:object)->bool:
         ip_port = (self.__socket_ip, self.__socket_port)
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -240,7 +243,8 @@ class ImageShow():
     这是python程序与C程序之间的socket数据格式
     数据格式<MessageHead>message<MessageTail>
     '''
-    def __getMessageBody(self, msg):
+    @strictly_func_check
+    def __getMessageBody(self:object, msg:str)->list:
         msg = msg.replace('\n', '')
         msg = msg.replace('\t', '')
         msg = msg.strip('\x00')
@@ -250,7 +254,8 @@ class ImageShow():
         return realmsglist
 
     '''根据屏幕尺寸设置图片的大小'''
-    def __resize(self, w, h, w_box, h_box, pil_image):
+    @strictly_func_check
+    def __resize(self:object, w:int, h:int, w_box:int, h_box:int, pil_image:object)->object:
         '''
         __resize a pil_image object so it will fit into
         a box of size w_box times h_box, but retain aspect ratio
@@ -263,7 +268,8 @@ class ImageShow():
         height = int(h * factor)
         return pil_image.resize((width, height), Image.ANTIALIAS)
 
-    def __showImg(self, infodict):
+    @strictly_func_check
+    def __showImg(self:object, infodict:dict)->None:
         '''根据名字找到图片的位置'''
         try:
             name = self.__genarateImageSaveName(infodict)
@@ -381,25 +387,27 @@ class ImageShow():
             self.__log.error(f'SocketInit ==> __reApplyCamera error:{e.args}')
         pass
 
-    def __getIdleCamera(self):
+    @strictly_func_check
+    def __getIdleCamera(self:object)->dict:
         result = []
         for item in self.__cameraList:
             if item["inUse"] == False and item["cameraip"] != '':
                 result.append(item)
         if not result:
-            return ''
+            return {}
         else:
             return random.choice(result)
 
-    def __getMatchCamera(self, ip):
+    @strictly_func_check
+    def __getMatchCamera(self:object, ip:str)->dict:
         for item in self.__cameraList:
             if item["cameraip"] == ip:
                 if item["inUse"] == False and item["cameraip"] != '':
                     return item
-        return ''
+        return {}
 
-    def __ClientProcessData(self, recQueue, cameraDict, recognMsg) -> bool:
-        
+    @strictly_func_check
+    def __ClientProcessData(self:object, recQueue:object, cameraDict:dict, recognMsg:list) -> None:
         WebSocketIOLoop = recognMsg[0]
         WebSocketHandler = recognMsg[1]
 #camerano = str(recognMsg[2], encoding="utf-8")
@@ -473,7 +481,8 @@ class ImageShow():
     查询是否有空闲的相机和显示器，如果有则查看是否有等待识别的图片
     进行显示，并向C程序发送相机触发信息
     '''
-    def __ImageSendReqProcess(self, r):
+    @strictly_func_check
+    def __ImageSendReqProcess(self:object, r:object)->None:
         localTimer = 0
         while True:
             localTimer = int(time.time() * 1000)
@@ -675,8 +684,8 @@ class ImageShow():
         return True
         pass
     
-
-    def __modifyImageName(self, cameraDict, color, plate):
+    @strictly_func_check
+    def __modifyImageName(self:object, cameraDict:dict, color:str, plate:str)->None:
         '''beijing-wanda-1-0-1565930712886.jpg'''
         try:
             imagepath = self.config.get("CONFIG", "SAVE_IMAGE_DIR")
@@ -695,8 +704,8 @@ class ImageShow():
         except Exception as e:
             self.__log.error(f'__modifyImageName has error:{e.args}')
 
-
-    def __WebSocketSendResp(self, websocketIOLoop, websocketHandler, strCameraNo, strIdentify, strStatus, strColor, strPlate):
+#@strictly_func_check
+    def __WebSocketSendResp(self:object, websocketIOLoop:object, websocketHandler:object, strCameraNo:str, strIdentify:str, strStatus:str, strColor:str, strPlate:str)->None:
         resp_bytes = self.__genarateRecognRespMsg(strCameraNo, strIdentify, strStatus, strColor, strPlate)
         if resp_bytes:
             websocketIOLoop.add_callback( WebSocketThread.send_message, websocketHandler, resp_bytes)
@@ -704,7 +713,8 @@ class ImageShow():
 
 
     '''生成发送给websocket client的响应数据'''
-    def __genarateRecognRespMsg(self, strCamerano, strIdentify, strStatus, strColor, strPlate):
+    @strictly_func_check
+    def __genarateRecognRespMsg(self:object, strCamerano:str, strIdentify:str, strStatus:str, strColor:str, strPlate:str)->bytes:
         try:
             self.__log.info(f'socket client strCamerano={strCamerano} strIdentify={strIdentify}')
             bytecamerano = bytes(strCamerano, encoding="utf-8")
@@ -738,12 +748,13 @@ class ImageShow():
                 return buf
             else:
                 self.__log.info(f'__genarateRecognRespMsg: status error:{strStatus}')
-                return ''
+                return b''
         except Exception as e:
             self.__log.error(f'socket client __genarateRecognRespMsg: struct error:{e.args}')
-            return ''
+            return b''
 
-    def __genarateImageSaveName(self, cameraDict):
+    @strictly_func_check
+    def __genarateImageSaveName(self:object, cameraDict:dict)->str:
         #timestamp = int(time.time() * 1000)
         try:
             #这里不能加入编码格式，否则再Image中调用os.path.exists 时会抛出Embedded NUL character错误
