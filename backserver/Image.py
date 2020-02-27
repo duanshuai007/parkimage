@@ -6,7 +6,7 @@ import sys
 from PIL import Image
 import hashlib
 import Config
-import LoggingHelper
+import LoggingQueue
 from strictly_func_check import strictly_func_check
 
 class CtrlImage:
@@ -18,9 +18,9 @@ class CtrlImage:
     def __init__(self):
         c = Config.Config()
         self.saveImageDir = c.get("CONFIG", "SAVE_IMAGE_DIR")
-        logfile = c.get('CONFIG', 'LOGFILE')
-        self.log = LoggingHelper.LoggingProducer()
+        self.log = LoggingQueue.LoggingProducer().getlogger()
         pass
+
     #保存功能
     #name format: city-park-server-camerano-time.jpeg
     @strictly_func_check

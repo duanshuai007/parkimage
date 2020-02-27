@@ -4,7 +4,7 @@
 import os
 import sys
 import Config
-import LoggingHelper
+import LoggingQueue
 
 def main():
     path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -18,7 +18,7 @@ def main():
         camera_ip_list.append(rrlist)
     
     logfile = c.get("CONFIG", "CLOGFILE")
-    log = LoggingHelper.LoggingProducer()
+    log = LoggingQueue.LoggingProducer().getlogger()
 
     if not logfile:
         log.error("LogFile not define, please add to config.ini")

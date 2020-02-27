@@ -23,8 +23,7 @@ from tornado import web, ioloop
 import Image
 import TokenDef
 import TheQueue
-import LoggingHelper
-import Config
+import LoggingQueue
 from strictly_func_check import strictly_func_check
 
 KEY = "WM_GROUND_LOCK" # MTU1MTg2NTkzNi43NTkzMzE6NTNkNDJjY2YwMmU4OWQ0Mjg4M2RjZjViNzg2ODQ4MzUxMzZkYmQyMQ==
@@ -148,9 +147,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
 
     @strictly_func_check
     def initialize(self:object, MsgQueue:dict, cameraip:str)->None:
-        c = Config.Config()
-        logfile = c.get("CONFIG", "LOGFILE")
-        self.__log = LoggingHelper.LoggingProducer()
+        self.__log = LoggingQueue.LoggingProducer().getlogger()
 
         self.__log.info("---------- WebSocket Init Begin ----------")
         self.__log.info(f'WebSocketInit --> message queue : {MsgQueue}')

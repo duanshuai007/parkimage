@@ -5,7 +5,7 @@ import threading
 import time
 import copy
 import Config
-import LoggingHelper
+import LoggingQueue
 
 class BlackList():
     
@@ -21,10 +21,7 @@ class BlackList():
     }
 
     def __init__(self, MsgQueueList):
-        c = Config.Config()
-        logfile = c.get('CONFIG', 'LOGFILE')
-        self.log = LoggingHelper.LoggingProducer()
-    
+        self.log = LoggingQueue.LoggingProducer().getlogger()
         self.recvQ = MsgQueueList["blackList"]
         t = threading.Thread(target = self.Thread, args=[self.recvQ])
         t.setDaemon(False)

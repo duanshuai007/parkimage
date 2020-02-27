@@ -496,7 +496,7 @@ static void thread_camera_trigger_handler(void * arg)
         if (NULL == last) {
             //所有相机都没有收到心跳返回，关闭socket链接
             //DEBUG("%s %d : fd[%d] client[%s] close\n", __func__, __LINE__, last->Info->socket, last->Info->IP);
-            DEBUG("All Carema not Alive\n");
+            //DEBUG("All Carema not Alive\n");
             last = camera;
             while(last) {
                 if (last->Info == NULL) {

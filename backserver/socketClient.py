@@ -21,7 +21,7 @@ from tornado import ioloop, web
 
 import Config
 import TheQueue
-import LoggingHelper
+import LoggingQueue
 from Image import CtrlImage
 from WebSocketThread import WebSocketThread
 from strictly_func_check import strictly_func_check
@@ -39,7 +39,7 @@ RET_RECOGNMSG_REFUSE    = 2
 RET_RECOGNMSG_GENAME    = 3
 RET_RECOGNMSG_SAVE      = 4
 
-class ImageShow():
+class socketClient():
     '''用来接收websocket线程(handler/ParkHandler)发送过来的图片识别请求信息'''
     rqueue = ''
     '''保存的socket描述符'''
@@ -190,7 +190,6 @@ class ImageShow():
     '''
     该程序需要区分出上下两个屏幕与相机的对应关系
     '''
-    __saveImagePath = ''
     __cameraCount = 0
     __mode = ''
 
@@ -205,8 +204,6 @@ class ImageShow():
     __log = None 
     __ImageHandler = None
 
-    __windowOK = False
-
     @strictly_func_check
     def __init__(self:object, MsgQueue:dict)->None:
 
@@ -215,18 +212,19 @@ class ImageShow():
         self.rqueue = MsgQueue["recv"]
         self.config = Config.Config()
 
-        logfile = self.config.get('CONFIG', 'LOGFILE')
-        self.__log = LoggingHelper.LoggingProducer()
+        self.__log = LoggingQueue.LoggingProducer().getlogger()
 
         self.__socket_port = int(self.config.get("CAMERA", "SOCKET_PORT"), 10)
         self.__socket_connection_alive = self.__connect_to_server()
-        self.__saveImagePath = self.config.get("CONFIG", "SAVE_IMAGE_DIR")
         self.__mode = self.config.get("CAMERA", "CLIENT_CAMERA_MODE")
 
         self.__log.info(f'SocketInit ==> Apply Camera Mode:{self.__mode}')
-        self.__log.info(f'SocketInit ==> ImagePath:{self.__saveImagePath}')
         self.__log.info(f'SocketInit ==> Camera Thread Socket Port:{self.__socket_port}')
         pass
+
+    @strictly_func_check
+    def setDisplay(self:object, display:object)->None:
+        self.__display = display
 
     @strictly_func_check
     def __connect_to_server(self:object)->bool:
@@ -253,73 +251,13 @@ class ImageShow():
         realmsglist = re.findall(rules, msg)
         return realmsglist
 
-    '''根据屏幕尺寸设置图片的大小'''
-    @strictly_func_check
-    def __resize(self:object, w:int, h:int, w_box:int, h_box:int, pil_image:object)->object:
-        '''
-        __resize a pil_image object so it will fit into
-        a box of size w_box times h_box, but retain aspect ratio
-        对一个pil_image对象进行缩放，让它在一个矩形框内，还能保持比例
-        '''
-        f1 = 1.0 * w_box / w # 1.0 forces float division in Python2
-        f2 = 1.0 * h_box / h
-        factor = min([f1, f2])
-        width = int(w * factor)
-        height = int(h * factor)
-        return pil_image.resize((width, height), Image.ANTIALIAS)
-
-    @strictly_func_check
-    def __showImg(self:object, infodict:dict)->None:
-        '''根据名字找到图片的位置'''
-        try:
-            name = self.__genarateImageSaveName(infodict)
-            namestr = "{}/{}/{}/{}/{}/{}".format(self.__saveImagePath, infodict["city"], infodict["park"], infodict["server"], infodict["camerano"], name)
-            #self.__log.info("Ready Show Image: %s" % namestr)
-
-            img_open = Image.open(namestr)
-            old_w, old_h = img_open.size
-            width = int(infodict["Window"]["width"], 10)
-            height = int(infodict["Window"]["height"], 10)
-            image_resized = self.__resize(old_w, old_h, width, height, img_open)
-            img_jpg = ImageTk.PhotoImage(image_resized)
-            infodict["Window"]["imageLabel"].config(image = img_jpg)
-            infodict["Window"]["imageLabel"].image = img_jpg
-        except Exception as e:
-            self.__log.error(f'SocketInit ==> __showImg has error:{e.args}')
-    ''' 
-    创建一个新的线程来专门显示图片
-    '''
-    def __WindowShowThread(self):
-        try:
-            '''创建根窗口并进行隐藏'''
-            self.__windowOK = False
-            root = tk.Tk()
-            root.withdraw()
-            '''创建子窗口'''
-            for camera in self.__cameraList:
-                top = tk.Toplevel(root)
-                top.attributes("-fullscreen", True)
-                top.attributes("-topmost",True)
-                width = int(camera["Window"]["width"], 10)
-                height = int(camera["Window"]["height"], 10)
-                pos = int(camera["Window"]["no"]) * width
-                size = "{}x{}+{}+{}".format(width, height, pos, 0)
-                top.geometry(size)
-                img_label = tk.Label(top)
-                img_label.pack()
-                camera["Window"]["imageLabel"] = img_label
-                self.__log.info("SocketInit ==> Create New TopLevel:Size = %s" % size)
-            self.__windowOK = True
-            root.update()
-            root.mainloop()
-        except Exception as e:
-            self.__log.error(f'SocketInit ==> __WindowShowThread error:{e.args}')
-            self.__windowOK = False
     '''
     每次使用前需要向服务器申请可以使用的相机数
     在申请到相机之后直接创建tkinter imagelabel
     '''
-    def __applyCamera(self):
+
+    @strictly_func_check
+    def applyCamera(self:object)->list:
         try:
             self.__applyCameraReq["number"] = self.config.get("CAMERA", "CAMERA_APPLY_MODE")
             self.__log.info("SocketInit ==> Apply Camera Mode=%s" % self.__applyCameraReq["number"])
@@ -356,10 +294,10 @@ class ImageShow():
                         self.__cameraList.append(dictmsg)
 
             self.__log.info(f'SocketInit ==> get camera:{self.__cameraList}')
-            return len(self.__cameraList)
+            return self.__cameraList
         except Exception as e:
-            self.__log.error(f'SocketInit ==> __applyCamera error:{e.args}')
-            return 0
+            self.__log.error(f'SocketInit ==> applyCamera error:{e.args}')
+            return []
 
     def __reApplyCamera(self):
         #服务端C程序重启后需要重新发送申请相机的命令
@@ -420,6 +358,7 @@ class ImageShow():
         imagecontent = recognMsg[7]
         
         cameraDict["threadLock"].acquire()
+        imageName = ''
         try:
             cameraDict["webSocketHandler"] = WebSocketHandler
             cameraDict["webSocketIOLoop"] = WebSocketIOLoop
@@ -435,13 +374,13 @@ class ImageShow():
                 self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:md5", '', '')
                 return False
 
-            name = self.__genarateImageSaveName(cameraDict)
-            if name is None: 
+            imageName = self.__genarateImageSaveName(cameraDict)
+            if imageName is None: 
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Genarate Name Failed!')
                 self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:name", '', '')
                 return False
 
-            if self.__ImageHandler.save(name, imagecontent) == False:
+            if self.__ImageHandler.save(imageName, imagecontent) == False:
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Save Image Failed!')
                 self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:save", '', '')
                 return False
@@ -452,7 +391,7 @@ class ImageShow():
         finally:
             cameraDict["threadLock"].release()
 
-        self.__showImg(cameraDict)
+        self.__display.show(cameraDict, imageName)
 
         self.__RecognReq["info"]["cameraip"] = cameraDict["cameraip"]
         self.__RecognReq["info"]["unicode"] = cameraDict["unicode"]
@@ -657,23 +596,6 @@ class ImageShow():
         pass
 
     def run(self):
-        '''
-        首先需要申请相机，根据申请到的相机数量创建tkinter图片显示器
-        '''        
-        self.__cameraCount = self.__applyCamera()
-        self.__log.info("SocketInit ==> we got %d camera!" % self.__cameraCount)
-        if self.__cameraCount == 0:
-            self.server.close()
-            return             
-        
-        t = threading.Thread(target = self.__WindowShowThread, args = [])
-        t.setDaemon(False)
-        t.start()
-
-        time.sleep(2)
-        if self.__windowOK == False:
-            return False
-
         t = threading.Thread(target = self.__ImageSendReqProcess, args = [self.rqueue,])
         t.setDaemon(False)
         t.start()
@@ -704,7 +626,7 @@ class ImageShow():
         except Exception as e:
             self.__log.error(f'__modifyImageName has error:{e.args}')
 
-#@strictly_func_check
+    @strictly_func_check
     def __WebSocketSendResp(self:object, websocketIOLoop:object, websocketHandler:object, strCameraNo:str, strIdentify:str, strStatus:str, strColor:str, strPlate:str)->None:
         resp_bytes = self.__genarateRecognRespMsg(strCameraNo, strIdentify, strStatus, strColor, strPlate)
         if resp_bytes:

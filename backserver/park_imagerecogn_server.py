@@ -19,19 +19,19 @@ from tornado.web import Application
 from multiprocessing import Process
 
 # 自定义模块
-#from LoggingHelper import LoggingProducer, start_logger_consumer, terminate_logger_consumer
 from WebSocketThread import WebSocketThread 
 from Image import CtrlImage
-#import socketClient 
-from socketClient import ImageShow
+from socketClient import socketClient 
 import BlackListThread
 import TheQueue 
 import Config
-from LoggingHelper import LoggingProducer, start_logger_consumer, terminate_logger_consumer
-
+from DisplayWindows import DisplayClass
+from LoggingQueue import LoggingProducer, LoggingConsumer
+'''
+#from LoggingHelper import LoggingProducer, start_logger_consumer, terminate_logger_consumer
 def start_log_process() -> None:
     global logger_process
-    logger_process = Process(target=start_logger_consumer)
+    logger_process = Process(target=start_logger_consumer, name="LoggingForBackserver")
     logger_process.start()
 
 def end_log_process() -> None:
@@ -39,6 +39,7 @@ def end_log_process() -> None:
     terminate_logger_consumer()
     if logger_process is not None:
         logger_process.join()
+'''
 
 class SerApplication(tornado.web.Application):
     def __init__(self, QueueList) :
@@ -48,25 +49,34 @@ class SerApplication(tornado.web.Application):
 
 def main():
     c = Config.Config()
-    logfile = c.get("CONFIG", "LOGFILE")
     websocket_port = c.get("WEBSKCKET", "PORT")
 
-    start_log_process()
-    logger = LoggingProducer()
+#    start_log_process()
+    logrecv = LoggingConsumer()
+
+    logger = LoggingProducer().getlogger()
 
     TheQueue.init()
     dicts = TheQueue.get()
 
-    transferStation = ImageShow(dicts)
-    if transferStation.run() == False:
+    #申请相机
+    client = socketClient(dicts)
+    cameraDictList = client.applyCamera()
+    if (len(cameraDictList) == 0):
+        logger.error(f'apply camera failed')
+        return
+    #根据相机数申请屏幕
+    objDisplay = DisplayClass(cameraDictList)
+    if (objDisplay.check() == False):
+        logger.error(f'Windows Display error')
+        return
+    #设置显示的句柄
+    client.setDisplay(objDisplay)
+    if client.run() == False:
         logger.error(f'socket Client Image Window Create Failed');
         return
     
     tornado.options.parse_command_line()
-
-    if not logfile:
-        print("LogFile[%s] not define, please add to config.ini" % logfile)
-    print("logfile:%s" % logfile)
     '''
     ssl处理，
     privateKey.key 生成：openssl req -out CSR.csr -new -newkey rsa:2048 -nodes -keyout privateKey.key

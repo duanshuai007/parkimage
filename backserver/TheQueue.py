@@ -3,7 +3,7 @@
 
 import queue
 import Config
-import LoggingHelper
+import LoggingQueue
 from strictly_func_check import strictly_func_check
 '''
 初始化websockt和图片处理线程之间的消息队列
@@ -19,7 +19,7 @@ def init()->None:
     cameraNum = len(rlist)
     mode = c.get("CAMERA", "CLIENT_CAMERA_MODE")
     logfile = c.get('CONFIG', 'LOGFILE')
-    log = LoggingHelper.LoggingProducer()
+    log = LoggingQueue.LoggingProducer().getlogger()
 
     log.info("TheQueue ==> find %d camera, create Queue len:%d" % (cameraNum,cameraNum))
     if mode == "PREEMPTION":
