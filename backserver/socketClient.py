@@ -465,7 +465,7 @@ class socketClient():
                     self.__log.info(f'Camera:[{cameraip}] ==> dev ip : {cameraDict["cameraip"]}')
                     camera = self.__getMatchCamera(cameraip)
                     if camera:
-                        self.__ClientProcessData(r, cameraDict, msg)
+                        self.__ClientProcessData(r, camera, msg)
                     else:
                         self.__WebSocketSendResp(msg[0], msg[1], msg[2], msg[3], "refuse", '', '')
                         self.__log.warn(f'Camera:[{cameraip}] ==> __ImageSendReqProcess refuse[2]!')
