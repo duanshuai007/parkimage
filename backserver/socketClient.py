@@ -345,44 +345,45 @@ class socketClient():
         return {}
 
     @strictly_func_check
-    def __ClientProcessData(self:object, recQueue:object, cameraDict:dict, recognMsg:list) -> None:
-        WebSocketIOLoop = recognMsg[0]
-        WebSocketHandler = recognMsg[1]
-#camerano = str(recognMsg[2], encoding="utf-8")
-#       identify = str(recognMsg[3], encoding="utf-8")
-        camerano = recognMsg[2]
-        identify = recognMsg[3]
-        cameraip = recognMsg[4]
-        serverinfo = recognMsg[5]
-        md5_str  = recognMsg[6]
-        imagecontent = recognMsg[7]
+    def __ClientProcessData(self:object, cameraDict:dict, recognMsg:list) -> None:
+        #WebSocketIOLoop = recognMsg[0]
+        #WebSocketHandler = recognMsg[1]
+        #camerano = recognMsg[2]
+        #identify = recognMsg[3]
+        #cameraip = recognMsg[4]
+        #serverinfo = recognMsg[5]
+        #md5_str  = recognMsg[6]
+        #imagecontent = recognMsg[7]
         
         cameraDict["threadLock"].acquire()
         imageName = ''
         try:
-            cameraDict["webSocketHandler"] = WebSocketHandler
-            cameraDict["webSocketIOLoop"] = WebSocketIOLoop
-            cameraDict["city"] = serverinfo["city"]
-            cameraDict["park"] = serverinfo["park"]
-            cameraDict["server"] = serverinfo["server"]
-            cameraDict["camerano"] = camerano
-            cameraDict["identify"] = identify
-            cameraDict["timeStamp"] = time.strftime("%Y%m%d%H%M%S", time.localtime())
-
-            if self.__ImageHandler.checkMd5(imagecontent, md5_str) == False:
+            cameraDict["webSocketHandler"] =recognMsg[1] 
+            cameraDict["webSocketIOLoop"] = recognMsg[0]
+            cameraDict["city"] = recognMsg[5]["city"]
+            cameraDict["park"] = recognMsg[5]["park"]
+            cameraDict["server"] = recognMsg[5]["server"]
+            cameraDict["camerano"] = recognMsg[2] 
+            cameraDict["identify"] = recognMsg[3] 
+            cameraDict["timeStamp"] = time.strftime("%Y%m%d%H%M%S", time.localtime()) + str(int(time.time() * 1000000))[-6:]
+            if self.__ImageHandler.checkMd5(recognMsg[7], recognMsg[6]) == False:
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Md5 error')
-                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:md5", '', '')
+                self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "failed:md5", '', '')
                 return False
 
             imageName = self.__genarateImageSaveName(cameraDict)
             if imageName is None: 
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Genarate Name Failed!')
-                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:name", '', '')
+                self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "failed:name", '', '')
                 return False
 
-            if self.__ImageHandler.save(imageName, imagecontent) == False:
+            while self.__ImageHandler.checkNameExists(imageName) == False:
+                imageName = self.__genarateImageSaveName(cameraDict)
+                cameraDict["timeStamp"] = time.strftime("%Y%m%d%H%M%S%MS", time.localtime()) + str(int(time.time() * 1000000))[-6:]
+
+            if self.__ImageHandler.save(imageName, recognMsg[7]) == False:
                 self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> Websockt Client Message: Save Image Failed!')
-                self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:save", '', '')
+                self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "failed:save", '', '')
                 return False
 
             cameraDict["waitTimeCount"] = int(time.time() * 1000) + 5000
@@ -392,10 +393,12 @@ class socketClient():
             cameraDict["threadLock"].release()
 
         self.__display.show(cameraDict, imageName)
-
-        self.__RecognReq["info"]["cameraip"] = cameraDict["cameraip"]
-        self.__RecognReq["info"]["unicode"] = cameraDict["unicode"]
-        sendstring = json.dumps(self.__RecognReq)
+        
+        recognReq = copy.copy(self.__RecognReq)
+        recognReq["type"] = "request"
+        recognReq["info"]["cameraip"] = cameraDict["cameraip"]
+        recognReq["info"]["unicode"] = cameraDict["unicode"]
+        sendstring = json.dumps(recognReq)
         self.__log.info(f'Camera:[{cameraDict["cameraip"]}] ==> Send Recogn Request To CThread: {sendstring}')
         try:
             if self.__socket_connection_alive == True:
@@ -403,16 +406,16 @@ class socketClient():
                 if self.__mode == "PREEMPTION":
                     tmp = self.__getIdleCamera()
                     if not tmp:
-                        self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "stop", '', '')
+                        self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "stop", '', '')
                     else:
-                        self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "goon", '', '')
+                        self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "goon", '', '')
                 elif self.__mode == "MATCH":
-                    self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "ready", '', '')
+                    self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "ready", '', '')
         except Exception as e:
             #已经是错误消息了，重复处理也不会成功，丢弃。
             #self.__DelayCameraDictList.append(recognMsg)
             self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> __ClientProcessData error occurs:{e.args}')
-            self.__WebSocketSendResp(WebSocketIOLoop, WebSocketHandler, camerano, identify, "failed:recogn pthread", '', '')
+            self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "failed:recogn pthread", '', '')
         pass
 
 
@@ -428,56 +431,73 @@ class socketClient():
             cameraDict = self.__getIdleCamera()
             if cameraDict:
                 #查看这个延时列表中是否有等待识别的信息
-                if len(self.__DelayCameraDictList) == 0:
+                if self.__mode == "PREEMPTION":
                     if not r.empty():
                         msg = r.get()
                         msg[2] = str(msg[2], encoding="utf-8")
                         msg[3] = str(msg[3], encoding="utf-8")
-                        cameraip = msg[4]
-                         #抢占模式使用所有可以使用的设备
-                        if self.__mode == "PREEMPTION":
+                        self.__log.info(f'Camera:[{cameraDict["cameraip"]}] ==> mode:[PREEMPTION] send:{msg[0],msg[1],msg[2],msg[3],msg[4],msg[5]}')
+                        self.__ClientProcessData(cameraDict, msg)
+                elif self.__mode == "MATCH":
+                    if len(self.__DelayCameraDictList) == 0:
+                        if not r.empty():
+                            msg = r.get()
+                            msg[2] = str(msg[2], encoding="utf-8")
+                            msg[3] = str(msg[3], encoding="utf-8")
+                            cameraip = msg[4]
+                            #抢占模式使用所有可以使用的设备
+                            '''
+                            if self.__mode == "PREEMPTION":
                             self.__log.info(f'Camera:[{cameraip}] ==> mode:[PREEMPTION] send:{msg[0],msg[1],msg[2],msg[3],msg[4],msg[5]}')
-                            self.__ClientProcessData(r, cameraDict, msg)
-                       #匹配模式仅仅使用IP相同的设备
-                        elif self.__mode == "MATCH":
+                            self.__ClientProcessData(cameraDict, msg)
+                            '''
+                            #匹配模式仅仅使用IP相同的设备
+                            #elif self.__mode == "MATCH":
                             self.__log.info(f'Camera:[{cameraip}] ==> mode:[MATCH] send:{msg[0],msg[1],msg[2],msg[3],msg[4],msg[5]}')
                             if cameraip == cameraDict["cameraip"]:
-                                self.__ClientProcessData(r, cameraDict, msg)
+                                self.__ClientProcessData( cameraDict, msg)
                             else:
                                 self.__DelayCameraDictList.append(msg)
+                            del msg
+                    else:
+                        #发现有等待识别的消息
+                        msg = self.__DelayCameraDictList.pop(0)
+                        cameraip = msg[4]
+                        #发现有新的消息，返回拒绝，扔掉改消息
+                        '''
+                        if not r.empty():
+                            tmp = r.get()
+                            if cameraip == tmp[4]:
+                                self.__WebSocketSendResp(tmp[0], tmp[1], camerano, identify, "refuse", '', '')
+                                self.__log.warn(f'Camera:[{cameraip}] ==> __ImageSendReqProcess refuse[1]!')
+                            else:
+                                self.__DelayCameraDictList.append(tmp)
+                            del tmp
+                        '''
+                        #如果消息中的ip与当前设备ip一致，则进行处理，否则继续放回延时列表中
+                        self.__log.info(f'Camera:[{cameraip}] ==> dev ip : {cameraDict["cameraip"]}')
+                        camera = self.__getMatchCamera(cameraip)
+                        if camera:
+                            self.__ClientProcessData(camera, msg)
+                        else:
+                            self.__WebSocketSendResp(msg[0], msg[1], msg[2], msg[3], "refuse", '', '')
+                            self.__log.warn(f'Camera:[{cameraip}] ==> __ImageSendReqProcess refuse[2]!')
                         del msg
                 else:
-                    #发现有等待识别的消息
-                    msg = self.__DelayCameraDictList.pop(0)
-                    cameraip = msg[4]
-                    #发现有新的消息，返回拒绝，扔掉改消息
-                    '''
-                    if not r.empty():
-                        tmp = r.get()
-                        if cameraip == tmp[4]:
-                            self.__WebSocketSendResp(tmp[0], tmp[1], camerano, identify, "refuse", '', '')
-                            self.__log.warn(f'Camera:[{cameraip}] ==> __ImageSendReqProcess refuse[1]!')
-                        else:
-                            self.__DelayCameraDictList.append(tmp)
-                        del tmp
-                    '''
-                    #如果消息中的ip与当前设备ip一致，则进行处理，否则继续放回延时列表中
-                    self.__log.info(f'Camera:[{cameraip}] ==> dev ip : {cameraDict["cameraip"]}')
-                    camera = self.__getMatchCamera(cameraip)
-                    if camera:
-                        self.__ClientProcessData(r, camera, msg)
-                    else:
-                        self.__WebSocketSendResp(msg[0], msg[1], msg[2], msg[3], "refuse", '', '')
-                        self.__log.warn(f'Camera:[{cameraip}] ==> __ImageSendReqProcess refuse[2]!')
-                    del msg
-            else:
+                    self.__log.warn(f'Camera:[{cameraip}] ==> self.__mode error!')
+            else: #if cameraDict: else
                 #设备全忙，返回拒绝信息
                 if not r.empty():
                     tmp = r.get()
+                    tmp[2] = str(tmp[2], encoding="utf-8")
+                    tmp[3] = str(tmp[3], encoding="utf-8")
                     self.__WebSocketSendResp(tmp[0], tmp[1], tmp[2], tmp[3], "refuse", '', '')
                     self.__log.warn(f'Camera:[{tmp[4]}] ==> __ImageSendReqProcess refuse[3]!')
                     del tmp
-
+            #if cameraDict end
+            '''
+            对使用中的相机进行超时检测
+            '''
             for camera in self.__cameraList:
                 if camera["inUse"] == True:
                     if camera["waitTimeCount"] < localTimer:
@@ -494,7 +514,9 @@ class socketClient():
                         camera["identify"] = 0
                         camera["unicode"] = 0
                         camera["threadLock"].release()
-
+            '''
+            对相机的网络连接进行检测
+            '''
             if self.__socket_connection_alive == False:
                 if self.__socket_timer < localTimer:
                     self.__socket_timer = localTimer + 5000
@@ -638,7 +660,7 @@ class socketClient():
     @strictly_func_check
     def __genarateRecognRespMsg(self:object, strCamerano:str, strIdentify:str, strStatus:str, strColor:str, strPlate:str)->bytes:
         try:
-            self.__log.info(f'socket client strCamerano={strCamerano} strIdentify={strIdentify}')
+            #self.__log.info(f'socket client strCamerano={strCamerano} strIdentify={strIdentify}')
             bytecamerano = bytes(strCamerano, encoding="utf-8")
             CameraNoLenght = len(bytecamerano)
             byteidentify = bytes(strIdentify, encoding="utf-8")

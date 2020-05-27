@@ -11,13 +11,17 @@ DEBUG=$(awk -F"=" '{if($1=="DEBUGLOGFILE") print $2}' ${root_dir}/config.ini)
 ImageSavePath=$(awk -F"=" '{if($1=="SAVE_IMAGE_DIR") print $2}' ${root_dir}/config.ini)
 
 #root_dir="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-dirlist=$(${FIND} ${root_dir}/${ImageSavePath} -name *.jpg | grep -E ".+[0-9]{14}\_.+\.jpg$")
+dirlist=$(${FIND} ${root_dir}/${ImageSavePath} -name "*.jpg" | grep -E ".+[0-9]{14}\_.+\.jpg$")
+
+#echo "root_dir=$root_dir ImageSavePath=$ImageSavePath" >>  ${root_dir}/${DEBUG}
+#echo "dirlist=$dirlist " >> ${root_dir}/${DEBUG}
+#echo $root_dir
 
 if [ ! -d "${root_dir}/${UPLOAD_PATH}" ]
 then
     ${MKDIR} -p ${root_dir}/${UPLOAD_PATH}
 fi
-
+#echo "Imagesavepath:$ImageSavePath"
 for val in ${dirlist}
 do
     #echo ${val}

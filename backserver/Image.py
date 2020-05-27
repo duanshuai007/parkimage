@@ -47,6 +47,23 @@ class CtrlImage:
             return False
         pass
 
+    def checkNameExists(self:object, name:str)->bool:
+        dirname = name.split('-')
+        if len(dirname) < 5:
+            self.log.info("ImageHandler ==> image name format error, name:%s" % name)
+            return False
+
+        try:
+            tmp = "%s/%s/%s/%s" % (dirname[0], dirname[1], dirname[2], dirname[3])
+            self.path = self.saveImageDir + '/' + tmp
+            if os.path.isfile(self.path + '/' + name):
+                return False
+            return True;
+            
+        except Exception as e:
+            return False
+
+
     def isVaildImage(self, name):
         bValid = True
         try:

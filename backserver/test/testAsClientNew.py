@@ -21,7 +21,7 @@ class Client:
     token = 'MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ='
 
     def __init__(self, path):
-        self.path = path + '2'
+        self.path = path 
         logging.info("set path = %s" % path)
         pass
 
@@ -48,9 +48,9 @@ class Client:
         return True
 
     def run(self):
-        sthread = threading.Thread(target = self.sendImagePthread, args = [])
-        sthread.setDaemon(False)
-        sthread.start()
+        #sthread = threading.Thread(target = self.sendImagePthread, args = [])
+        #sthread.setDaemon(False)
+        #sthread.start()
         
         rthread = threading.Thread(target = self.recvRecognThread, args = [])
         rthread.setDaemon(False)
@@ -98,6 +98,41 @@ class Client:
                     print("type(mtype)=", type(mtype))
 
     def sendImagePthread(self):
+        '''读取内容'''
+        f = open("/home/duan/test.jpg")
+        mbinary = f.read()
+        '''生成md5值'''
+        md5 = hashlib.md5()
+        md5.update(mbinary)
+        md5str = md5.hexdigest()
+        
+        camerano_bytes = bytes("test", encoding="utf-8")
+        cameranolength = len(camerano_bytes)
+    
+        imagelen = len(mbinary)
+        id_bytes = bytes("1987020900123498769", encoding="utf-8")
+        md5_bytes = bytes(md5str, encoding="utf-8")
+
+        fmt = ">{}{}s{}{}s".format("B", cameranolength, "19s32sI", imagelen)
+        print("before fmt:%s" % fmt)
+        body = struct.pack(fmt, cameranolength, camerano_bytes, id_bytes, md5_bytes, imagelen, mbinary)
+        tmp = struct.unpack(fmt, body)
+        print("send body", tmp[0], tmp[1], tmp[2], tmp[3])
+        body_compressed = bz2.compress(bytes(body))
+        
+        bodylen = len(body_compressed)
+        fmt = ">{}{}s".format("BB", bodylen)
+        print("after fmt:%s" % fmt)
+        senddata = struct.pack(fmt, 3, 1, body_compressed)
+
+        print("imagelen = %d" % imagelen)
+        print("bodylen = %d" % len(body))
+
+        '''发送websocket请求数据'''
+        self.wss.send_binary(senddata)
+
+
+    def sendExample(self):
         while True:
             file_list = os.listdir(self.path)
             time.sleep(1)
@@ -146,6 +181,7 @@ class Client:
                         time.sleep(0.01)
             pass
 
+
     def renameAllPicture(self):
         filelist = os.listdir(self.path)
         num = 0
@@ -163,4 +199,5 @@ if __name__ == '__main__':
     client = Client("/home/duan/Pictures")
     if client.login() == True:
         client.renameAllPicture()
+        sendExample()
         client.run()

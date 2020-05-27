@@ -97,7 +97,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     Token   80String    对应的字符串
 
     2.登陆响应
-    Status  1Byte       0:失败 1:成功
+    Status  1Byte       1:失败 0:成功
 
     3.识别请求
     CameraNo        1Byte       相机编号，十六进制
@@ -151,7 +151,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
 
         self.__log.info("---------- WebSocket Init Begin ----------")
         self.__log.info(f'WebSocketInit --> message queue : {MsgQueue}')
-        self.__log.info(f'WebSocketInit --> camera ip : {cameraip}')
+        #self.__log.info(f'WebSocketInit --> camera ip : {cameraip}')
     
         self.ImageReconQueue = MsgQueue["recv"]
         self.__CameraIP = cameraip

@@ -120,5 +120,30 @@ Body | xxx | 有效消息经过以压缩方式压缩之后的内容
 > struct.pack(fmt, xxx) 生成格式化字节串   
 > struct.unpack(fmt, xxx) 解析字节串，返回值是列表形式的值，可以直接过去列表内元素。
 
+@(默认)	本机	本机	本机,凑够4字节
+=	本机	标准	none,按原字节数
+<	小端	标准	none,按原字节数
+>	大端	标准	none,按原字节数
+!	network(大端)	标准	none,按原字节数
+
+格式符	C语言类型	Python类型	Standard size
+x	pad byte(填充字节)	no value
+c	char	string of length 1	1
+b	signed char	integer	1
+B	unsigned char	integer	1
+?	_Bool	bool	1
+h	short	integer	2
+H	unsigned short	integer	2
+i	int	integer	4
+I(大写的i)	unsigned int	integer	4
+l(小写的L)	long	integer	4
+L	unsigned long	long	4
+q	long long	long	8
+Q	unsigned long long	long	8
+f	float	float	4
+d	double	float	8
+s	char[]	string
+p	char[]	string
+P	void *	long
 
 
