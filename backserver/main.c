@@ -386,6 +386,9 @@ static char * genarateRespRecognMsg(CameraList *node, char * status)
     if (node == NULL || status == NULL)
         return NULL;
 
+    if (strlen(node->Info->unicode) == 0)
+        return NULL;
+
     cJSON * root = cJSON_CreateObject();
     cJSON * child = NULL;
     cJSON * result = NULL;
