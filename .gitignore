@@ -1,0 +1,9 @@
+backserver/__pycache__
+
+#忽略所有.o和.a文件
+#*.[oa]
+
+backserver/Picture/*
+backserver/image_rsync/*
+backserver/Log/*
+
