@@ -578,12 +578,12 @@ class socketClient():
                                                 '''对比uniconde是否相同'''
                                                 if jsonmsg["info"]["unicode"] == camera["unicode"]:
                                                     self.__log.info(f'Camera:[{ip}] ==> socketClient Send RecognMessage to Client: {jsonmsg}')
-                                                    if jsonmsg["info"]["result"]["status"] == "fail":
-                                                        #modify picture name to xxx_xxxx
-                                                        self.__modifyImageName(camera, '', '')
-                                                    else:
+                                                    if jsonmsg["info"]["result"]["status"] == "success":
                                                         #modify picture name to real name
                                                         self.__modifyImageName(camera, jsonmsg["info"]["result"]["color"], jsonmsg["info"]["result"]["plate"]) 
+                                                    else:
+                                                        #modify picture name to xxx_xxxx
+                                                        self.__modifyImageName(camera, '', '')
                                                     self.__WebSocketSendResp(camera["webSocketIOLoop"], camera["webSocketHandler"], camera["camerano"], camera["identify"], jsonmsg["info"]["result"]["status"], jsonmsg["info"]["result"]["color"], jsonmsg["info"]["result"]["plate"])
                                                 else:
                                                     pass
@@ -596,6 +596,7 @@ class socketClient():
                                                 camera["unicode"] = 0
                                                 camera["waitTimeCount"] = int(time.time() * 1000)
                                                 camera["threadLock"].release()
+                                    del jsonmsg
                         except socket.error:
                             self.__log.error(f'EPOLL ERROR ==> except socket.error')
                             pass

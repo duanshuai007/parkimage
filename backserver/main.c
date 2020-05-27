@@ -27,7 +27,7 @@
 //单位ms
 #define CLIENT_HEART_STAMP          30000   //心跳信息发送间隔
 #define CLIENT_HEART_RESP_DELAY     5000    //心跳响应时间
-#define TRIGGER_DELAY               500     //图像显示在屏幕上需要一定时间，所以这里需要一个延时
+#define TRIGGER_DELAY               1000     //图像显示在屏幕上需要一定时间，所以这里需要一个延时
 #define TRIGGER_RETRY_DELAY         500     //重复触发的时间间隔
 #define TRIGGER_RETRY_TIMES         6       //重复触发的次数
 
@@ -367,6 +367,8 @@ static bool cameraTriggerSet(char *cameraip, char *unicode, unsigned int delayms
                 last->Info->bHeartSendFlag = false;
                 last->Info->triggerDelay = getCurrentTime() + delayms;
                 last->Info->action = CAMERA_ACTION_TRIGGER;
+                memset(&last->Info->plateInfo, 0, sizeof(last->Info->plateInfo));
+
                 pthread_mutex_unlock(&last->Info->lock);
                 //printf("set action CAMERA_ACTION_TRIGGER\n");
                 DEBUG("Message Unicode[%s] set action CAMERA_ACTION_TRIGGER\n", last->Info->unicode);
@@ -386,7 +388,7 @@ static char * genarateRespRecognMsg(CameraList *node, char * status)
     if (node == NULL || status == NULL)
         return NULL;
 
-    if (strlen(node->Info->unicode) == 0)
+    if (strlen(node->Info->unicode) == 0 || strlen(node->Info->IP) == 0)
         return NULL;
 
     cJSON * root = cJSON_CreateObject();
@@ -407,8 +409,8 @@ static char * genarateRespRecognMsg(CameraList *node, char * status)
     resultstr = cJSON_Print(root);
     cJSON_Delete(root);
     
-    memset(&node->Info->plateInfo, 0, sizeof(node->Info->plateInfo));
-    memset(node->Info->unicode, 0, sizeof(node->Info->unicode));
+    //memset(&node->Info->plateInfo, 0, sizeof(node->Info->plateInfo));
+    //memset(node->Info->unicode, 0, sizeof(node->Info->unicode));
 
     return resultstr;
 }
