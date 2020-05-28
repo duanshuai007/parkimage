@@ -250,11 +250,12 @@ void LPRC_DataEx2CallBackHandler(CLIENT_LPRC_PLATE_RESULTEX *recResult, LDWORD d
 
                 pthread_mutex_lock(&last->Info->lock);
                 
-                memset(&last->Info->plateInfo, 0, sizeof(last->Info->plateInfo));
-                strncpy(last->Info->plateInfo.color, colorbuff, strlen(colorbuff));
-                strncpy(last->Info->plateInfo.plate, platebuff, strlen(platebuff));
-                last->Info->action = CAMERA_ACTION_HASRESULT;
-                
+                if (last->Info->action == CAMERA_ACTION_WAITRESULT) {
+                    memset(&last->Info->plateInfo, 0, sizeof(last->Info->plateInfo));
+                    strncpy(last->Info->plateInfo.color, colorbuff, strlen(colorbuff));
+                    strncpy(last->Info->plateInfo.plate, platebuff, strlen(platebuff));
+                    last->Info->action = CAMERA_ACTION_HASRESULT;
+                }
                 pthread_mutex_unlock(&last->Info->lock);
             }
             break;
@@ -585,6 +586,8 @@ static void thread_camera_trigger_handler(void * arg)
                                 last->Info->heart = timestamp;
                                 last->Info->bHeartSendFlag = false;
                                 last->Info->action = CAMERA_ACTION_IDLE;
+                                memset(&last->Info->plateInfo, 0, sizeof(last->Info->plateInfo));
+                                memset(last->Info->unicode, 0, sizeof(last->Info->unicode));
                             } else {
                                 DEBUG("%s retry CAMERA_ACTION_WAITRESULT\n", last->Info->unicode);
                                 CLIENT_LPRC_SetTrigger(last->Info->IP, last->Info->Port);    
@@ -603,6 +606,8 @@ static void thread_camera_trigger_handler(void * arg)
                         last->Info->heart = timestamp;
                         last->Info->bHeartSendFlag = false;
                         last->Info->action = CAMERA_ACTION_IDLE;
+                        memset(&last->Info->plateInfo, 0, sizeof(last->Info->plateInfo));
+                        memset(last->Info->unicode, 0, sizeof(last->Info->unicode));
                     }
                     break;
                 default:
