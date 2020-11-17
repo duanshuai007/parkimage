@@ -1,4 +1,4 @@
-##BACK SERVER
+## BACK SERVER
 
 * 该程序运行在docker中。  
 
@@ -12,7 +12,7 @@
 > 使用`docker rm park`删除停止的容器。  
 > 使用`docker image rm xxxxxx`删除对应的镜像。
 
-##ubuntu18.04 增加开机启动任务
+## ubuntu18.04 增加开机启动任务
 
 > 
 step1:  
