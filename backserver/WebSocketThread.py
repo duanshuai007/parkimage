@@ -165,18 +165,13 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
         self.__log.info(f'WebSocketInit --> handler: {self}') 
         self.__log.info("---------- WebSocket Init End----------")
 
-
     def open(self):
         self.__log.info(f'WebSocketInit --> New Client has Connected {self}')
-        
         self.ImageHandler = Image.CtrlImage()
-
         self.objPer = tornado.ioloop.PeriodicCallback(self.__RegisterEvent, 2000)
         self.objPer.start()
-
         self.pingObj = tornado.ioloop.PeriodicCallback(self.__pingMessage, 10000)
         self.pingObj.start()
-
         self.set_nodelay(True)
         self.live_web_sockets.add(self)
         self.__log.info(f'WebSocketInit --> self.live_web_sockets: {self.live_web_sockets}')
@@ -209,7 +204,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
         CompressMode = message[1]
         CompressBody = message[2:]
 
-        self.__log.info(f'WebSocketMessage --> on message: type:{MsgType} compress:{CompressMode}')
+        #self.__log.info(f'WebSocketMessage --> on message: type:{MsgType} compress:{CompressMode}')
         if MsgType in [LOGIN_REQ, RECOGN_REQ] and CompressMode in [COMPRESS_MODE_NONE, COMPRESS_MODE_BZ2]:
             DecompressBody = ''
             if CompressMode == COMPRESS_MODE_NONE:
@@ -257,7 +252,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     def __loginCertification(self:object, msgbytes:bytes)->None:
         fmt = "{}{}".format(self.MsgSizeAlign, self.LoginReqStruct)
         msg = self.__do_unpackdata(fmt, msgbytes)
-        self.__log.info(f'WebSocketMessage --> login message: {msg}')
+        #self.__log.info(f'WebSocketMessage --> login message: {msg}')
         if msg:
             if len(msg) == 4:
                 cityno = msg[0]
@@ -351,7 +346,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     '''
     @strictly_func_check
     def __ClientRecognRequest(self:object, info:bytes)->None:
-        self.__log.info("WebSocketMessage --> Recv Client Data")
+        #self.__log.info("WebSocketMessage --> Recv Client Data")
         #获取图片数据长度
         #第一个字节表示相机编号长度
         cameraNoLen = info[0]
@@ -370,9 +365,10 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
                 bIdentify = dat[1]
                 md5str = str(dat[2], encoding="utf-8")
                 imagecontent = dat[4]
-                self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imgsize:{imgsize}')
+                #self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imgsize:{imgsize}')
                 if self.__isRegister == True:
-                    self.__log.info(f'self.server_ioloop={self.server_ioloop}, self=f{self}')
+                    #self.__log.info(f'self.server_ioloop={self.server_ioloop}, self=f{self}')
+                    self.__log.info(f'websocket send request:ip={self.__CameraIP},camera={camerano},identify={bIdentify},md5={md5str}')
                     sendMsgList = [self.server_ioloop, self, camerano, bIdentify, self.__CameraIP, self.__serverInfo, md5str, imagecontent]
                     self.ImageReconQueue.put(sendMsgList)
                 else:

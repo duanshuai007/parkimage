@@ -27,9 +27,9 @@
 //单位ms
 #define CLIENT_HEART_STAMP          30000   //心跳信息发送间隔
 #define CLIENT_HEART_RESP_DELAY     5000    //心跳响应时间
-#define TRIGGER_DELAY               1000     //图像显示在屏幕上需要一定时间，所以这里需要一个延时
+#define TRIGGER_DELAY               2000     //图像显示在屏幕上需要一定时间，所以这里需要一个延时
 #define TRIGGER_RETRY_DELAY         500     //重复触发的时间间隔
-#define TRIGGER_RETRY_TIMES         6       //重复触发的次数
+#define TRIGGER_RETRY_TIMES         5       //重复触发的次数
 
 typedef struct {
     char color[8];
@@ -99,18 +99,18 @@ static void DEBUG(const char *fmt, ...)
     va_list arg_list;
     char buf[1024] = {0};
 
-    //time_t sec;
-    //struct tm *tm;
+    time_t sec;
+    struct tm *tm;
     struct timeval tv;
 
-    //sec = time(NULL);
-    //tm  = localtime(&sec);
+    sec = time(NULL);
+    tm  = localtime(&sec);
     gettimeofday(&tv, NULL);
 
     va_start(arg_list, fmt);
     vsnprintf(buf, 1024, fmt, arg_list);
     //printf("[%02d:%02d:%02d]:%s", tm->tm_hour, tm->tm_min, tm->tm_sec, buf);
-    printf("[%ld:%03ld]:%s", tv.tv_sec, tv.tv_usec/1000, buf);
+    printf("[%02d-%02d-%02d %02d:%02d:%02d][%ld:%03ld]:%s", tm->tm_year, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_sec, tv.tv_usec/1000, buf);
     va_end(arg_list);
 }
 
@@ -373,8 +373,11 @@ static bool cameraTriggerSet(char *cameraip, char *unicode, unsigned int delayms
                 pthread_mutex_unlock(&last->Info->lock);
                 //printf("set action CAMERA_ACTION_TRIGGER\n");
                 DEBUG("Message Unicode[%s] set action CAMERA_ACTION_TRIGGER\n", last->Info->unicode);
+                return true;
+            } else {
+                DEBUG("camera %s busy!\r\n", cameraip);
+                return false;
             }
-            return true;
             //break;
         }
 
@@ -555,7 +558,7 @@ static void thread_camera_trigger_handler(void * arg)
                                     last->Info->bHeartGetResp = false;
                                 }
                             }
-                        } 
+                        }
                     }
                     break;
                 case CAMERA_ACTION_TRIGGER:
@@ -597,7 +600,9 @@ static void thread_camera_trigger_handler(void * arg)
                     break;
                 case CAMERA_ACTION_HASRESULT:
                     {
-                        DEBUG("%s has result CAMERA_ACTION_HASRESULT\n", last->Info->unicode);
+                        DEBUG("%s has result CAMERA_ACTION_HASRESULT,%s %s\n", last->Info->unicode,
+                                                                                last->Info->plateInfo.plate,
+                                                                                last->Info->plateInfo.color);
                         char * str = genarateRespRecognMsg(last, "success");
                         if (str) {
                             socket_send(last->Info->socket, str);

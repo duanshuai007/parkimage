@@ -389,35 +389,38 @@ class socketClient():
             cameraDict["waitTimeCount"] = int(time.time() * 1000) + 5000
             cameraDict["inUse"] = True
             cameraDict["unicode"] = str(random.randint(100000, 999999))
+            
+            self.__display.show(cameraDict, imageName)
+            self.__log.info("[{}]=>show image on screen, name={}, md5={}".format(cameraDict["unicode"], imageName, recognMsg[6]))
+            
+            recognReq = copy.copy(self.__RecognReq)
+            recognReq["type"] = "request"
+            recognReq["info"]["cameraip"] = cameraDict["cameraip"]
+            recognReq["info"]["unicode"] = cameraDict["unicode"]
+            sendstring = json.dumps(recognReq)
+            #self.__log.info(f'Camera:[{cameraDict["cameraip"]}] ==> Send Recogn Request To CThread: {sendstring}')
+            try:
+                if self.__socket_connection_alive == True:
+                    self.server.send(bytes(sendstring, encoding="utf-8"))
+                    if self.__mode == "PREEMPTION":
+                        tmp = self.__getIdleCamera()
+                        if not tmp:
+                            self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "stop", '', '')
+                        else:
+                            self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "goon", '', '')
+                    elif self.__mode == "MATCH":
+                        self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "ready", '', '')
+            except Exception as e:
+                #已经是错误消息了，重复处理也不会成功，丢弃。
+                #self.__DelayCameraDictList.append(recognMsg)
+                self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> __ClientProcessData error occurs:{e.args}')
+                self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "failed:recogn pthread", '', '')
+
+        except Exception as e:
+            self.__log.error("__ClientProcessData error:{}".format(e))
         finally:
             cameraDict["threadLock"].release()
-
-        self.__display.show(cameraDict, imageName)
-        
-        recognReq = copy.copy(self.__RecognReq)
-        recognReq["type"] = "request"
-        recognReq["info"]["cameraip"] = cameraDict["cameraip"]
-        recognReq["info"]["unicode"] = cameraDict["unicode"]
-        sendstring = json.dumps(recognReq)
-        self.__log.info(f'Camera:[{cameraDict["cameraip"]}] ==> Send Recogn Request To CThread: {sendstring}')
-        try:
-            if self.__socket_connection_alive == True:
-                self.server.send(bytes(sendstring, encoding="utf-8"))
-                if self.__mode == "PREEMPTION":
-                    tmp = self.__getIdleCamera()
-                    if not tmp:
-                        self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "stop", '', '')
-                    else:
-                        self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "goon", '', '')
-                elif self.__mode == "MATCH":
-                    self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "ready", '', '')
-        except Exception as e:
-            #已经是错误消息了，重复处理也不会成功，丢弃。
-            #self.__DelayCameraDictList.append(recognMsg)
-            self.__log.error(f'Camera:[{cameraDict["cameraip"]}] ==> __ClientProcessData error occurs:{e.args}')
-            self.__WebSocketSendResp(recognMsg[0], recognMsg[1], recognMsg[2], recognMsg[3], "failed:recogn pthread", '', '')
         pass
-
 
     '''
     查询是否有空闲的相机和显示器，如果有则查看是否有等待识别的图片
@@ -436,7 +439,7 @@ class socketClient():
                         msg = r.get()
                         msg[2] = str(msg[2], encoding="utf-8")
                         msg[3] = str(msg[3], encoding="utf-8")
-                        self.__log.info(f'Camera:[{cameraDict["cameraip"]}] ==> mode:[PREEMPTION] send:{msg[0],msg[1],msg[2],msg[3],msg[4],msg[5]}')
+                        self.__log.info(f'Camera:[{cameraDict["cameraip"]}] ==> mode:[PREEMPTION] send:{msg[2],msg[3],msg[4],msg[5]}')
                         self.__ClientProcessData(cameraDict, msg)
                 elif self.__mode == "MATCH":
                     if len(self.__DelayCameraDictList) == 0:
@@ -571,13 +574,13 @@ class socketClient():
                                         self.__connecttions[fileno].send(bytes(item, encoding="utf-8"))
                                     elif jsonmsg["type"] == "response":
                                         ip = jsonmsg["info"]["cameraip"]
-                                        self.__log.info(f'Camera:[{ip}] ==> socketClient Get RecognMessage From CThread: {jsonmsg}')
+                                        self.__log.info(f'[{ip}:{jsonmsg["info"]["unicode"]}] ==> Get Recogn From C: {jsonmsg}')
                                         '''根据相机ip找到对应的设备信息'''
                                         for camera in self.__cameraList:
                                             if ip == camera["cameraip"] and camera["inUse"] == True:
                                                 '''对比uniconde是否相同'''
                                                 if jsonmsg["info"]["unicode"] == camera["unicode"]:
-                                                    self.__log.info(f'Camera:[{ip}] ==> socketClient Send RecognMessage to Client: {jsonmsg}')
+                                                    self.__log.info(f'[{ip}:{camera["unicode"]}] ==> Send Recogn to WebClient: {jsonmsg}')
                                                     if jsonmsg["info"]["result"]["status"] == "success":
                                                         #modify picture name to real name
                                                         self.__modifyImageName(camera, jsonmsg["info"]["result"]["color"], jsonmsg["info"]["result"]["plate"]) 
@@ -644,7 +647,7 @@ class socketClient():
                 newname = "{}-{}-{}-{}-{}_{}_{}.{}".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], cameraDict["timeStamp"], 'xxx', 'xxxxx', imagetype)
             else:
                 newname = "{}-{}-{}-{}-{}_{}_{}.{}".format(cameraDict["city"], cameraDict["park"], cameraDict["server"], cameraDict["camerano"], cameraDict["timeStamp"], color, plate, imagetype)
-            #self.__log.info(f'__modifyImageName rename: oldname:{name}, newname:{newname}')
+            self.__log.info(f'__modifyImageName rename: oldname:{name}, newname:{newname}')
             os.rename(imagepath + name, imagepath + newname)
         except Exception as e:
             self.__log.error(f'__modifyImageName has error:{e.args}')
@@ -672,7 +675,7 @@ class socketClient():
                 byteplate = bytes(strPlate, encoding="utf-8")
                 buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus, bytecolor, byteplate)
                 #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus, bytecolor, byteplate)
-                self.__log.info(f'send to client:{fmt} {buf}')
+                #self.__log.info(f'send to client:{fmt} {buf}')
                 return buf
             elif strStatus.startswith("failed:"):
                 stalist = strStatus.split(':')
@@ -681,7 +684,7 @@ class socketClient():
                 bytestatus = self.__status_dict["failed"]
                 buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus, errcode)
                 #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus, errcode)
-                self.__log.info(f'send to client:{fmt} {buf}')
+                #self.__log.info(f'send to client:{fmt} {buf}')
                 return buf
             elif strStatus in self.__status_dict.keys():
                 fmt = "{}{}B{}s{}".format(self.MsgSizeAlign, self.MsgHeadStruct, CameraNoLenght, self.RecognRespString)
@@ -689,10 +692,10 @@ class socketClient():
                 #self.__log.info(f'resp:fmd={fmt} bytestatus={bytestatus} bytecamerano={bytecamerano} byteidentify={byteidentify}')
                 buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, CameraNoLenght, bytecamerano, byteidentify, bytestatus)
                 #buf = struct.pack(fmt, RECOGN_RESP, COMPRESS_MODE_NONE, byteidentify, bytestatus)
-                self.__log.info(f'send to client:{fmt} {buf}')
+                #self.__log.info(f'send to client:{fmt} {buf}')
                 return buf
             else:
-                self.__log.info(f'__genarateRecognRespMsg: status error:{strStatus}')
+                self.__log.warn(f'__genarateRecognRespMsg: status error:{strStatus}')
                 return b''
         except Exception as e:
             self.__log.error(f'socket client __genarateRecognRespMsg: struct error:{e.args}')
