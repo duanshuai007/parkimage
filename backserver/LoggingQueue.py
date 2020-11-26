@@ -68,19 +68,28 @@ LOGGING = {
             'backupCount': 5,  # 备份份数
             'encoding': 'utf8',  # 文件编码
         },
+        'console_file': {
+            'class' : 'logging.handlers.TimedRotatingFileHandler',
+            'formatter' : 'standard',
+            'filename' : LOGFILE,
+            'interval' : 1,
+            'backupCount' : 60,
+            'encoding' : 'utf-8',
+            'when' : 'D'
+        }
     },
 
     # 日志管理器集合
     'loggers': {
         # 管理器
         'default': {
-            'handlers': ['console', 'log'],
+            'handlers': ['console', 'console_file'],
             'level': 'DEBUG',
             'propagate': True,  # 是否传递给父记录器
         },
         # 管理器
         LOGGERNAME : {
-            'handlers': ['console', 'log'],
+            'handlers': ['console', 'console_file'],
             'level': 'DEBUG',
             'propagate': False,  # 是否传递给父记录器,也就是传送给root logger,如果设置为True则在console会输出重复的信息
         },

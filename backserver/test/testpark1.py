@@ -18,7 +18,7 @@ class Client:
     
     wss = ''
     globalWait = False
-    token = 'MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ='
+    token = b'MTYzNzE0Mzc4Mi43OTE2MDY0OjUzNWQ2MTZiNTNjMDU5MWUzOWJlMDQ2YjJjYzQ2ZWIyZGM0MzJiMGY='
 
     errcode_list = ["识别错误", "识别超时", "名称错误", "保存失败", "显示错误", "识别线程出错", "信息格式错误", "md5值错误", "登陆错误"]
 

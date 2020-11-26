@@ -47,7 +47,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     ImageReconQueue是socketClient.py用来接收websocket发送过去的等待识别的图片请求
     '''
     ImageReconQueue = None
-    BackListQueue = None
+    #BackListQueue = None
     '''图片保存，校验md5的句柄'''
     ImageHandler = None
     
@@ -157,16 +157,16 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
         self.__CameraIP = cameraip
         self.__log.info(f'WebSocketInit --> remote ip : {self.request.remote_ip}')
         self.client_info["ClientIP"] = self.request.remote_ip
-        self.BackListQueue = MsgQueue["blackList"]
-        self.BackListQueue.put(self.client_info)
+#       self.BackListQueue = MsgQueue["blackList"]
+#       self.BackListQueue.put(self.client_info)
 
         self.server_ioloop = ioloop.IOLoop.current()
-        self.__log.info(f'WebSocketInit --> ioloop: {self.server_ioloop}') 
-        self.__log.info(f'WebSocketInit --> handler: {self}') 
+#self.__log.info(f'WebSocketInit --> ioloop: {self.server_ioloop}') 
+#        self.__log.info(f'WebSocketInit --> handler') 
         self.__log.info("---------- WebSocket Init End----------")
 
     def open(self):
-        self.__log.info(f'WebSocketInit --> New Client has Connected {self}')
+        self.__log.info(f'WebSocketInit --> New Client has Connected')
         self.ImageHandler = Image.CtrlImage()
         self.objPer = tornado.ioloop.PeriodicCallback(self.__RegisterEvent, 2000)
         self.objPer.start()
@@ -196,7 +196,7 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
         if self in self.live_web_sockets:
             self.live_web_sockets.remove(self)
         self.close()
-        self.__log.info(f'WebSocketMessage --> Client:{self} Disconnected!')
+        self.__log.info(f'WebSocketMessage --> Client Disconnected!')
 
     @strictly_func_check
     def on_message(self:object, message:bytes)->None:
@@ -328,14 +328,14 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
 
     def __pingMessage(self):
         #self.__log.info(f'send ping message ,count=: {self.__count},  {self}')
-        if(self.__count == 5):
-            self.pingObj.stop()
-            if self in self.live_web_sockets:
-                self.live_web_sockets.remove(self)
-            self.close()
-            return
-        self.__count = self.__count + 1
         try:
+            if(self.__count == 5):
+                self.pingObj.stop()
+                if self in self.live_web_sockets:
+                    self.live_web_sockets.remove(self)
+                self.close()
+                return
+            self.__count = self.__count + 1
             self.ping("hello ping")
         except Exception as e:
             self.__log.warn(f'__pingMessage : {e.args}')
@@ -346,48 +346,53 @@ class WebSocketThread(tornado.websocket.WebSocketHandler):
     '''
     @strictly_func_check
     def __ClientRecognRequest(self:object, info:bytes)->None:
-        #self.__log.info("WebSocketMessage --> Recv Client Data")
-        #获取图片数据长度
-        #第一个字节表示相机编号长度
-        cameraNoLen = info[0]
-        realdata = info[1:]
-        #1->图片名长度值的说明数字 cameraNoLen->图片名长度具体值
-        #19->identify 长度 32->md5长度
-        #4->图片长度值的说明数字
-        imgsize = len(info) - 1 - cameraNoLen - 19 - 32 - 4;
-        #self.__log.info("image size = %d" % size)
-        fmt = "{}{}s{}{}s".format(self.MsgSizeAlign, cameraNoLen, self.RecognReqStruct, imgsize)
-        #self.__log.info("unpack fmt:%s" % fmt)
-        dat = self.__do_unpackdata(fmt, realdata)
-        if dat:
-            if len(dat) == 5:
-                camerano = dat[0]
-                bIdentify = dat[1]
-                md5str = str(dat[2], encoding="utf-8")
-                imagecontent = dat[4]
-                #self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imgsize:{imgsize}')
-                if self.__isRegister == True:
-                    #self.__log.info(f'self.server_ioloop={self.server_ioloop}, self=f{self}')
-                    self.__log.info(f'websocket send request:ip={self.__CameraIP},camera={camerano},identify={bIdentify},md5={md5str}')
-                    sendMsgList = [self.server_ioloop, self, camerano, bIdentify, self.__CameraIP, self.__serverInfo, md5str, imagecontent]
-                    self.ImageReconQueue.put(sendMsgList)
-                else:
-                    mresp5 = self.__genarateRecognRespMsg(camerano, bIdentify, "failed:login", 0, 0)
-                    if mresp5:
-                        self.__write_bytes(mresp5)
-                return
-        #如果出错则会走到这里
-        #解析数据出现错误，说明数据格式有问题，返回错误信息
-        err_camerano = info[1:cameraNoLen]
-        err_bIdentify = info[cameraNoLen + 1:cameraNoLen + 1 + 19]
-        mresp6 = self.__genarateRecognRespMsg(err_camerano, err_bIdentify, "failed:format", 0, 0)
-        if mresp6:
-            self.__write_bytes(mresp6)
-        pass
+        try:
+            #self.__log.info("WebSocketMessage --> Recv Client Data")
+            #获取图片数据长度
+            #第一个字节表示相机编号长度
+            cameraNoLen = info[0]
+            realdata = info[1:]
+            #1->图片名长度值的说明数字 cameraNoLen->图片名长度具体值
+            #19->identify 长度 32->md5长度
+            #4->图片长度值的说明数字
+            imgsize = len(info) - 1 - cameraNoLen - 19 - 32 - 4;
+            #self.__log.info("image size = %d" % size)
+            fmt = "{}{}s{}{}s".format(self.MsgSizeAlign, cameraNoLen, self.RecognReqStruct, imgsize)
+            #self.__log.info("unpack fmt:%s" % fmt)
+            dat = self.__do_unpackdata(fmt, realdata)
+            if dat:
+                if len(dat) == 5:
+                    camerano = dat[0]
+                    bIdentify = dat[1]
+                    md5str = str(dat[2], encoding="utf-8")
+                    imagecontent = dat[4]
+                    #self.__log.info(f'camerano:{camerano} identify:{bIdentify} md5str:{md5str} imgsize:{imgsize}')
+                    if self.__isRegister == True:
+                        #self.__log.info(f'self.server_ioloop={self.server_ioloop}, self=f{self}')
+                        self.__log.info(f'websocket send request:ip={self.__CameraIP},camera={camerano},identify={bIdentify},md5={md5str}')
+                        sendMsgList = [self.server_ioloop, self, camerano, bIdentify, self.__CameraIP, self.__serverInfo, md5str, imagecontent]
+                        self.ImageReconQueue.put(sendMsgList)
+                    else:
+                        mresp5 = self.__genarateRecognRespMsg(camerano, bIdentify, "failed:login", 0, 0)
+                        if mresp5:
+                            self.__write_bytes(mresp5)
+                    return
+            #如果出错则会走到这里
+            #解析数据出现错误，说明数据格式有问题，返回错误信息
+            err_camerano = info[1:cameraNoLen]
+            err_bIdentify = info[cameraNoLen + 1:cameraNoLen + 1 + 19]
+            mresp6 = self.__genarateRecognRespMsg(err_camerano, err_bIdentify, "failed:format", 0, 0)
+            if mresp6:
+                self.__write_bytes(mresp6)
+        except Exception as e:
+            self.__log.error("__ClientRecognRequest :error{}".format(e))
 
     @strictly_func_check
     def __write_bytes(self:object, msg:bytes)->None:
-        self.write_message(msg, True)
+        try:
+            self.write_message(msg, True)
+        except Exception as e:
+            self.__log.error("__write_bytes error:{}".format(e))
 
     @strictly_func_check
     def __genarateRecognRespMsg(self:object, bytecamerano:bytes, byteidentify:bytes, strstatus:str, bytecolor:bytes, byteplate:bytes)->str:

@@ -18,7 +18,7 @@ class Client:
     
     wss = ''
     globalWait = False
-    token = 'MTU5MzE2NjUyMC40OTM4NzM2OjYzMjA5NzNjYzRiYTgwOWJkNDhlYTMwMGI0YWQxYThiMWVmNjI1MzQ='
+    token = 'MTYzNzE0Mzc4Mi43OTE2MDY0OjUzNWQ2MTZiNTNjMDU5MWUzOWJlMDQ2YjJjYzQ2ZWIyZGM0MzJiMGY='
 
     def __init__(self, path):
         self.path = path 

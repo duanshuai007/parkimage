@@ -654,10 +654,12 @@ class socketClient():
 
     @strictly_func_check
     def __WebSocketSendResp(self:object, websocketIOLoop:object, websocketHandler:object, strCameraNo:str, strIdentify:str, strStatus:str, strColor:str, strPlate:str)->None:
-        resp_bytes = self.__genarateRecognRespMsg(strCameraNo, strIdentify, strStatus, strColor, strPlate)
-        if resp_bytes:
-            websocketIOLoop.add_callback( WebSocketThread.send_message, websocketHandler, resp_bytes)
-        pass
+        try:
+            resp_bytes = self.__genarateRecognRespMsg(strCameraNo, strIdentify, strStatus, strColor, strPlate)
+            if resp_bytes:
+                websocketIOLoop.add_callback( WebSocketThread.send_message, websocketHandler, resp_bytes)
+        except Exception as e:
+            self.__log.error("__WebSocketSendResp error:{}".format(e))
 
 
     '''生成发送给websocket client的响应数据'''
