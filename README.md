@@ -35,4 +35,13 @@ vi /etc/rc.local
 
 >
 step4:
-chmod +x /etc/rc.local
+chmod +x /etc/rc.loca
+
+
+## 使用service方式执行开机启动任务
+
+> 1.将backserver.service文件复制到/lib/systemd/system目录下
+
+> 2.执行sudo systemctl enable backserver.service设置开机启动
+
+
