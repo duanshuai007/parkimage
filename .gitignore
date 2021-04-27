@@ -4,6 +4,8 @@ backserver/__pycache__
 #*.[oa]
 
 backserver/Picture/*
+!backserver/Picture
 backserver/image_rsync/*
+!backserver/image_rsync
 backserver/Log/*
-
+!backserver/Log

@@ -18,7 +18,7 @@ class Client:
     
     wss = ''
     globalWait = False
-    token = 'MTYzNzE0Mzc4Mi43OTE2MDY0OjUzNWQ2MTZiNTNjMDU5MWUzOWJlMDQ2YjJjYzQ2ZWIyZGM0MzJiMGY='
+    token = 'MTY1MTAzMDc5MC43NjY1MDU6NjI0ZThhZTFlZDIyMGY4MzdiY2Y1NjdjZGE2YTcyMzk2MjkxMmQ4Yg=='
 
     def __init__(self, path):
         self.path = path 
@@ -199,5 +199,5 @@ if __name__ == '__main__':
     client = Client("/home/duan/Pictures")
     if client.login() == True:
         client.renameAllPicture()
-        sendExample()
+        client.sendExample()
         client.run()

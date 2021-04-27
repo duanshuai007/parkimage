@@ -1,0 +1,12 @@
+[Unit]
+Description=bigfish http server Service
+After=network.target
+
+[Service]
+Type=simple
+RestartSec=5
+ExecStart=/home/duan/git/parkimage/backserver_startup.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

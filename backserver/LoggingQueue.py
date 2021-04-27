@@ -75,7 +75,7 @@ LOGGING = {
             'interval' : 1,
             'backupCount' : 60,
             'encoding' : 'utf-8',
-            'when' : 'D'
+            'when' : 'midnight'
         }
     },
 
